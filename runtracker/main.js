@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, getDoc, writeBatch, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, getDoc, writeBatch, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // --- UPDATED CONFIG (pleasant-fire) ---
 const firebaseConfig = {
@@ -182,7 +182,8 @@ window.openEditModal = function(id) {
 
     lastFocusedElement = document.activeElement;
     document.getElementById('editModal').classList.remove('hidden');
-    document.getElementById('edit_incidentNumber').focus();
+    // Focus a non-input control so opening the modal does not trigger a mobile keyboard.
+    document.getElementById('editCloseButton').focus();
 }
 
 window.closeEditModal = function() {
@@ -559,6 +560,37 @@ window.exportToCSV = function() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+}
+
+window.deleteCurrentCall = async function() {
+    const id = document.getElementById('edit_docId').value;
+    const incidentNumber = document.getElementById('edit_incidentNumber').value.trim() || 'THIS CALL';
+    const deleteButton = document.getElementById('deleteCallButton');
+
+    if (!id || !currentUser) {
+        showToast('UNABLE TO DELETE WHILE OFFLINE', true);
+        return;
+    }
+
+    const confirmed = confirm(`DELETE CALL ${incidentNumber}?\n\nThis permanently removes the call record and cannot be undone.`);
+    if (!confirmed) return;
+
+    const originalContent = deleteButton.innerHTML;
+    deleteButton.disabled = true;
+    deleteButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> DELETING...';
+
+    try {
+        const callRef = doc(db, 'artifacts', appId, 'public', 'data', 'calls', id);
+        await deleteDoc(callRef);
+        closeEditModal();
+        showToast(`CALL ${incidentNumber} DELETED`);
+    } catch (error) {
+        console.error('Delete Error:', error);
+        showToast('FAILED TO DELETE CALL', true);
+    } finally {
+        deleteButton.disabled = false;
+        deleteButton.innerHTML = originalContent;
+    }
 }
 
 function parseCSV(text) {
