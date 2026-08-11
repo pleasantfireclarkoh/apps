@@ -218,6 +218,15 @@
             }
         };
 
+        function escapeHTML(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         // --- Auth & Init ---
         async function initApp() {
             try {
@@ -374,7 +383,7 @@
                         const row = document.createElement('div');
                         row.innerHTML = `
                             <div class="flex justify-between text-base mb-1 uppercase font-semibold text-gray-300">
-                                <span>${name}</span>
+                                <span>${escapeHTML(name)}</span>
                                 <span>${count}</span>
                             </div>
                             <div class="w-full bg-gray-700 rounded-full h-4">
@@ -415,7 +424,7 @@
                         const row = document.createElement('div');
                         row.innerHTML = `
                             <div class="flex justify-between text-base mb-1 uppercase font-semibold text-gray-300">
-                                <span class="truncate pr-2" title="${addr}">${addr}</span>
+                                <span class="truncate pr-2" title="${escapeHTML(addr)}">${escapeHTML(addr)}</span>
                                 <span>${count}</span>
                             </div>
                             <div class="w-full bg-gray-700 rounded-full h-4">
@@ -479,7 +488,7 @@
                     sortedDepts.forEach(([name, count]) => {
                         const li = document.createElement('li');
                         li.className = "flex justify-between border-b border-gray-700 py-2 last:border-0 items-center";
-                        li.innerHTML = `<span class="uppercase font-medium">${name}</span> <span class="bg-gray-700 text-white text-sm px-3 py-1 rounded-full font-bold">${count}</span>`;
+                        li.innerHTML = `<span class="uppercase font-medium">${escapeHTML(name)}</span> <span class="bg-gray-700 text-white text-sm px-3 py-1 rounded-full font-bold">${count}</span>`;
                         deptListEl.appendChild(li);
                     });
                 }
@@ -544,7 +553,7 @@
                         const row = document.createElement('div');
                         row.innerHTML = `
                             <div class="flex justify-between text-base mb-1 uppercase font-semibold text-gray-300">
-                                <span>${name}</span>
+                                <span>${escapeHTML(name)}</span>
                                 <span>${count}</span>
                             </div>
                             <div class="w-full bg-gray-700 rounded-full h-4">

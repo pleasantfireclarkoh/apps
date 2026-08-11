@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fire/EMS Call Tracker</title>
-    <link rel="apple-touch-icon" sizes="180x180" href="https://i.ibb.co/fzFpGymx/icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="PLEASANT">
@@ -17,24 +17,24 @@
 <body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex flex-col">
 
     <nav class="bg-gray-800 border-b border-gray-700 p-4 sticky top-0 z-50 shadow-lg">
-        <div class="max-w-[95%] mx-auto flex justify-between items-center">
+        <div class="max-w-[95%] mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
             <div class="flex items-center gap-3">
                 <i class="fa-solid fa-truck-medical text-red-500 text-2xl"></i>
                 <div>
-                    <h1 class="font-bold text-xl tracking-wide uppercase">RMS Call Tracker</h1>
+                    <h1 class="font-bold text-lg sm:text-xl tracking-wide uppercase">RMS Call Tracker</h1>
                     <div id="connectionStatus" class="text-xs text-yellow-500 flex items-center gap-1">
                         <i class="fa-solid fa-circle text-[8px] animate-pulse"></i> Connecting...
                     </div>
                 </div>
             </div>
-            <div class="flex gap-2">
-                <button onclick="switchTab('entry')" id="btn-entry" class="px-4 py-2 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 transition shadow-md border border-red-500 uppercase text-sm tracking-wider">
+            <div class="grid grid-cols-3 sm:flex gap-2 w-full sm:w-auto" role="tablist" aria-label="Tracker sections">
+                <button type="button" role="tab" aria-selected="true" aria-controls="tab-entry" onclick="switchTab('entry')" id="btn-entry" class="px-2 sm:px-4 py-2 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 transition shadow-md border border-red-500 uppercase text-xs sm:text-sm tracking-wider">
                     <i class="fa-solid fa-plus mr-1"></i> New Call
                 </button>
-                <button onclick="switchTab('history')" id="btn-history" class="px-4 py-2 rounded-lg bg-gray-700 text-gray-300 font-medium hover:bg-gray-600 transition border border-gray-600 uppercase text-sm tracking-wider">
+                <button type="button" role="tab" aria-selected="false" aria-controls="tab-history" tabindex="-1" onclick="switchTab('history')" id="btn-history" class="px-2 sm:px-4 py-2 rounded-lg bg-gray-700 text-gray-300 font-medium hover:bg-gray-600 transition border border-gray-600 uppercase text-xs sm:text-sm tracking-wider">
                     <i class="fa-solid fa-list mr-1"></i> History
                 </button>
-                <button onclick="switchTab('stats')" id="btn-stats" class="px-4 py-2 rounded-lg bg-gray-700 text-gray-300 font-medium hover:bg-gray-600 transition border border-gray-600 uppercase text-sm tracking-wider">
+                <button type="button" role="tab" aria-selected="false" aria-controls="tab-stats" tabindex="-1" onclick="switchTab('stats')" id="btn-stats" class="px-2 sm:px-4 py-2 rounded-lg bg-gray-700 text-gray-300 font-medium hover:bg-gray-600 transition border border-gray-600 uppercase text-xs sm:text-sm tracking-wider">
                     <i class="fa-solid fa-chart-pie mr-1"></i> Statistics
                 </button>
             </div>
@@ -57,11 +57,11 @@
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Dispatch Date</label>
+                            <label for="dispatchDate" class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Dispatch Date</label>
                             <input type="date" id="dispatchDate" required class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition uppercase">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Dispatch Time (24h)</label>
+                            <label for="dispatchTime" class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Dispatch Time (24h)</label>
                             <input type="text" id="dispatchTime" required placeholder="HH:MM" maxlength="5" pattern="([01]?[0-9]|2[0-3]):[0-5][0-9]" inputmode="numeric" oninput="autoFormatTime(this)" onblur="validateTime(this)" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition font-mono tracking-wider">
                             <p class="text-xs text-gray-500 mt-1 uppercase">Format: HH:MM (00:00 - 23:59)</p>
                         </div>
@@ -69,7 +69,7 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Call Nature</label>
+                            <label for="callNature" class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Call Nature</label>
                             <input list="natures" id="callNature" oninput="forceCaps(this)" required placeholder="SELECT OR TYPE..." class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition uppercase">
                             <datalist id="natures"></datalist>
                         </div>
@@ -77,13 +77,13 @@
                             <div>
                                 <label class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Response Type</label>
                                 <div class="grid grid-cols-3 gap-3">
-                                    <button type="button" onclick="selectType('EMS')" id="btn-ems" class="flex items-center justify-center py-2.5 rounded-lg font-bold border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 transition uppercase">
+                                        <button type="button" aria-pressed="true" onclick="selectType('EMS')" id="btn-ems" class="flex items-center justify-center py-2.5 rounded-lg font-bold border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 transition uppercase">
                                         <i class="fa-solid fa-star-of-life mr-2"></i>EMS
                                     </button>
-                                    <button type="button" onclick="selectType('Fire')" id="btn-fire" class="flex items-center justify-center py-2.5 rounded-lg font-bold border border-red-500 bg-red-600 text-white shadow-lg shadow-red-900/50 transform scale-[1.02] transition uppercase">
+                                        <button type="button" aria-pressed="false" onclick="selectType('Fire')" id="btn-fire" class="flex items-center justify-center py-2.5 rounded-lg font-bold border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 transition uppercase">
                                         <i class="fa-solid fa-fire mr-2"></i>Fire
                                     </button>
-                                    <button type="button" onclick="selectType('Both')" id="btn-both" class="flex items-center justify-center py-2.5 rounded-lg font-bold border border-purple-500 bg-purple-600 text-white shadow-lg shadow-purple-900/50 transform scale-[1.02] transition uppercase">
+                                        <button type="button" aria-pressed="false" onclick="selectType('Both')" id="btn-both" class="flex items-center justify-center py-2.5 rounded-lg font-bold border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 transition uppercase">
                                         <i class="fa-solid fa-layer-group mr-2"></i>Both
                                     </button>
                                 </div>
@@ -91,7 +91,7 @@
                             </div>
 
                             <div id="emsDispositionSection" class="hidden animate-fade-in-down">
-                                <label class="block text-sm font-medium text-blue-400 mb-1 uppercase tracking-wider">EMS Disposition</label>
+                                <label for="emsDisposition" class="block text-sm font-medium text-blue-400 mb-1 uppercase tracking-wider">EMS Disposition</label>
                                 <select id="emsDisposition" class="w-full bg-gray-900 border border-blue-500 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500 outline-none transition uppercase">
                                     <option value="">SELECT DISPOSITION</option>
                                     <option value="TRANSPORT">TRANSPORT</option>
@@ -107,7 +107,7 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Address</label>
+                        <label for="address" class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Address</label>
                         <div class="relative">
                             <input type="text" id="address" oninput="forceCaps(this)" required placeholder="1234 MAIN ST..." class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition uppercase" autocomplete="off">
                             
@@ -117,7 +117,7 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Units Responded</label>
+                        <label for="units" class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Units Responded</label>
                         <div id="unitChips" class="flex flex-wrap gap-2 mb-2 uppercase">
                             </div>
                         <input type="text" id="units" oninput="forceCaps(this)" placeholder="E.G. E1, M2, C501..." class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition uppercase">
@@ -149,13 +149,13 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Notes (Optional)</label>
+                        <label for="notes" class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Notes (Optional)</label>
                         <textarea id="notes" oninput="forceCaps(this)" rows="3" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition uppercase"></textarea>
                     </div>
 
                     <div class="pt-4 flex items-center justify-end gap-4 border-t border-gray-700">
                         <button type="button" onclick="resetForm()" class="text-gray-400 hover:text-white text-sm uppercase">Clear Form</button>
-                        <button type="submit" id="submitBtn" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shadow-lg transform active:scale-95 transition flex items-center gap-2 uppercase tracking-wide">
+                        <button type="submit" id="submitBtn" disabled class="px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-70 text-white font-bold rounded-lg shadow-lg transform active:scale-95 transition flex items-center gap-2 uppercase tracking-wide">
                             <span>Save Call Record</span>
                             <i class="fa-solid fa-save"></i>
                         </button>
@@ -265,31 +265,31 @@
                     <table class="w-full text-left border-collapse">
                         <thead class="bg-gray-900 text-gray-400 text-xs uppercase sticky top-0 z-10">
                             <tr>
-                                <th id="th-incident" onclick="handleSort('incident')" class="p-4 font-medium tracking-wider sortable">
+                                <th id="th-incident" role="button" tabindex="0" aria-sort="none" onclick="handleSort('incident')" class="p-4 font-medium tracking-wider sortable">
                                     Incident # <i class="fa-solid fa-sort sort-icon"></i>
                                 </th>
-                                <th id="th-datetime" onclick="handleSort('datetime')" class="p-4 font-medium tracking-wider sortable">
+                                <th id="th-datetime" role="button" tabindex="0" aria-sort="descending" onclick="handleSort('datetime')" class="p-4 font-medium tracking-wider sortable">
                                     Date/Time <i class="fa-solid fa-sort sort-icon"></i>
                                 </th>
-                                <th id="th-nature" onclick="handleSort('nature')" class="p-4 font-medium tracking-wider sortable">
+                                <th id="th-nature" role="button" tabindex="0" aria-sort="none" onclick="handleSort('nature')" class="p-4 font-medium tracking-wider sortable">
                                     Nature <i class="fa-solid fa-sort sort-icon"></i>
                                 </th>
-                                <th id="th-address" onclick="handleSort('address')" class="p-4 font-medium tracking-wider sortable">
+                                <th id="th-address" role="button" tabindex="0" aria-sort="none" onclick="handleSort('address')" class="p-4 font-medium tracking-wider sortable">
                                     Address <i class="fa-solid fa-sort sort-icon"></i>
                                 </th>
-                                <th id="th-type" onclick="handleSort('type')" class="p-4 font-medium tracking-wider sortable">
+                                <th id="th-type" role="button" tabindex="0" aria-sort="none" onclick="handleSort('type')" class="p-4 font-medium tracking-wider sortable">
                                     Type <i class="fa-solid fa-sort sort-icon"></i>
                                 </th>
-                                <th id="th-units" onclick="handleSort('units')" class="p-4 font-medium tracking-wider sortable">
+                                <th id="th-units" role="button" tabindex="0" aria-sort="none" onclick="handleSort('units')" class="p-4 font-medium tracking-wider sortable">
                                     Units <i class="fa-solid fa-sort sort-icon"></i>
                                 </th>
-                                <th id="th-mutual" onclick="handleSort('mutual')" class="p-4 font-medium tracking-wider sortable">
+                                <th id="th-mutual" role="button" tabindex="0" aria-sort="none" onclick="handleSort('mutual')" class="p-4 font-medium tracking-wider sortable">
                                     Mutual Aid <i class="fa-solid fa-sort sort-icon"></i>
                                 </th>
-                                <th id="th-disposition" onclick="handleSort('disposition')" class="p-4 font-medium tracking-wider sortable">
+                                <th id="th-disposition" role="button" tabindex="0" aria-sort="none" onclick="handleSort('disposition')" class="p-4 font-medium tracking-wider sortable">
                                     Disposition <i class="fa-solid fa-sort sort-icon"></i>
                                 </th>
-                                <th id="th-notes" onclick="handleSort('notes')" class="p-4 font-medium tracking-wider sortable">
+                                <th id="th-notes" role="button" tabindex="0" aria-sort="none" onclick="handleSort('notes')" class="p-4 font-medium tracking-wider sortable">
                                     Notes <i class="fa-solid fa-sort sort-icon"></i>
                                 </th>
                             </tr>
@@ -429,18 +429,18 @@
 
     </main>
 
-    <div id="editModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+    <div id="editModal" role="dialog" aria-modal="true" aria-labelledby="editModalTitle" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
         <div class="bg-gray-800 w-full max-w-2xl rounded-xl shadow-2xl border border-gray-700 flex flex-col max-h-[90vh]">
             
             <div class="p-6 border-b border-gray-700 bg-gray-850 flex justify-between items-center">
                 <div class="w-full mr-4">
-                    <h2 class="text-xl font-bold text-white uppercase">Edit Incident</h2>
+                    <h2 id="editModalTitle" class="text-xl font-bold text-white uppercase">Edit Incident</h2>
                     <div class="mt-2">
-                         <label class="text-xs text-gray-500 uppercase font-bold">Incident ID</label>
+                         <label for="edit_incidentNumber" class="text-xs text-gray-500 uppercase font-bold">Incident ID</label>
                          <input type="text" id="edit_incidentNumber" class="bg-gray-900 border border-gray-600 rounded px-3 py-1 text-yellow-400 font-mono text-sm font-bold w-full focus:ring-1 focus:ring-yellow-500 outline-none uppercase" oninput="forceCaps(this)">
                     </div>
                 </div>
-                <button onclick="closeEditModal()" class="text-gray-400 hover:text-white transition">
+                <button type="button" aria-label="Close edit dialog" onclick="closeEditModal()" class="text-gray-400 hover:text-white transition">
                     <i class="fa-solid fa-xmark text-2xl"></i>
                 </button>
             </div>
@@ -451,33 +451,33 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Dispatch Date</label>
-                        <input type="date" id="edit_dispatchDate" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition uppercase">
+                        <label for="edit_dispatchDate" class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Dispatch Date</label>
+                        <input type="date" id="edit_dispatchDate" required class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition uppercase">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Dispatch Time (24h)</label>
-                        <input type="text" id="edit_dispatchTime" maxlength="5" pattern="([01]?[0-9]|2[0-3]):[0-5][0-9]" inputmode="numeric" oninput="autoFormatTime(this)" onblur="validateTime(this)" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition font-mono tracking-wider">
+                        <label for="edit_dispatchTime" class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Dispatch Time (24h)</label>
+                        <input type="text" id="edit_dispatchTime" required maxlength="5" pattern="([01]?[0-9]|2[0-3]):[0-5][0-9]" inputmode="numeric" oninput="autoFormatTime(this)" onblur="validateTime(this)" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition font-mono tracking-wider">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Call Nature</label>
-                        <input list="natures" id="edit_callNature" oninput="forceCaps(this)" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition uppercase">
+                        <label for="edit_callNature" class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Call Nature</label>
+                        <input list="natures" id="edit_callNature" required oninput="forceCaps(this)" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition uppercase">
                     </div>
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Response Type</label>
                             <div class="grid grid-cols-3 gap-3">
-                                <button type="button" onclick="selectEditType('EMS')" id="edit_btn-ems" class="flex items-center justify-center py-2.5 rounded-lg font-bold border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 transition uppercase text-xs">EMS</button>
-                                <button type="button" onclick="selectEditType('Fire')" id="edit_btn-fire" class="flex items-center justify-center py-2.5 rounded-lg font-bold border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 transition uppercase text-xs">Fire</button>
-                                <button type="button" onclick="selectEditType('Both')" id="edit_btn-both" class="flex items-center justify-center py-2.5 rounded-lg font-bold border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 transition uppercase text-xs">Both</button>
+                                <button type="button" aria-pressed="false" onclick="selectEditType('EMS')" id="edit_btn-ems" class="flex items-center justify-center py-2.5 rounded-lg font-bold border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 transition uppercase text-xs">EMS</button>
+                                <button type="button" aria-pressed="false" onclick="selectEditType('Fire')" id="edit_btn-fire" class="flex items-center justify-center py-2.5 rounded-lg font-bold border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 transition uppercase text-xs">Fire</button>
+                                <button type="button" aria-pressed="false" onclick="selectEditType('Both')" id="edit_btn-both" class="flex items-center justify-center py-2.5 rounded-lg font-bold border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 transition uppercase text-xs">Both</button>
                             </div>
                             <input type="hidden" id="edit_responseType">
                         </div>
 
                         <div id="edit_emsDispositionSection" class="hidden animate-fade-in-down">
-                            <label class="block text-sm font-medium text-blue-400 mb-1 uppercase tracking-wider">EMS Disposition</label>
+                            <label for="edit_emsDisposition" class="block text-sm font-medium text-blue-400 mb-1 uppercase tracking-wider">EMS Disposition</label>
                             <select id="edit_emsDisposition" class="w-full bg-gray-900 border border-blue-500 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500 outline-none transition uppercase">
                                 <option value="">SELECT DISPOSITION</option>
                                 <option value="TRANSPORT">TRANSPORT</option>
@@ -493,12 +493,12 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Address</label>
-                    <input type="text" id="edit_address" list="addressHistory" oninput="forceCaps(this)" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition uppercase" autocomplete="off">
+                    <label for="edit_address" class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Address</label>
+                    <input type="text" id="edit_address" required list="addressHistory" oninput="forceCaps(this)" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition uppercase" autocomplete="off">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Units Responded</label>
+                    <label for="edit_units" class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Units Responded</label>
                     <div id="edit_unitChips" class="flex flex-wrap gap-2 mb-2 uppercase">
                         </div>
                     <input type="text" id="edit_units" oninput="forceCaps(this)" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition uppercase">
@@ -528,32 +528,27 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Notes</label>
+                    <label for="edit_notes" class="block text-sm font-medium text-gray-400 mb-1 uppercase tracking-wider">Notes</label>
                     <textarea id="edit_notes" oninput="forceCaps(this)" rows="3" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition uppercase"></textarea>
                 </div>
 
             </div>
 
-            <div class="p-6 border-t border-gray-700 bg-gray-850 flex justify-between items-center gap-3">
-                <button type="button" onclick="deleteCall()" class="px-4 py-2 rounded-lg bg-red-900/30 text-red-500 font-bold hover:bg-red-600 hover:text-white border border-red-500/30 transition uppercase flex items-center gap-2">
-                    <i class="fa-solid fa-trash-can"></i> Delete
+            <div class="p-6 border-t border-gray-700 bg-gray-850 flex justify-end gap-3">
+                <button onclick="closeEditModal()" class="px-6 py-2 rounded-lg bg-gray-700 text-gray-300 font-bold hover:bg-gray-600 transition uppercase">Cancel</button>
+                <button onclick="saveEdit()" class="px-6 py-2 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-lg transition uppercase flex items-center gap-2">
+                    <i class="fa-solid fa-save"></i> Save Changes
                 </button>
-                <div class="flex gap-3">
-                    <button onclick="closeEditModal()" class="px-6 py-2 rounded-lg bg-gray-700 text-gray-300 font-bold hover:bg-gray-600 transition uppercase">Cancel</button>
-                    <button onclick="saveEdit()" class="px-6 py-2 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-700 shadow-lg transition uppercase flex items-center gap-2">
-                        <i class="fa-solid fa-save"></i> Save Changes
-                    </button>
-                </div>
             </div>
 
         </div>
     </div>
 
-    <div id="toast" class="fixed bottom-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-xl transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-3">
+    <div id="toast" role="status" aria-live="polite" class="fixed bottom-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-xl transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-3">
         <i class="fa-solid fa-check-circle"></i>
         <span id="toastMessage" class="uppercase font-bold text-sm">Action Successful</span>
     </div>
 
-    <script type="module" src="main.js"></script>
+    <script type="module" src="main.js?v=20260811-2"></script>
 </body>
 </html>

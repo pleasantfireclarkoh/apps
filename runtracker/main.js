@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, getDoc, writeBatch, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, getDoc, writeBatch, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // --- UPDATED CONFIG (pleasant-fire) ---
 const firebaseConfig = {
@@ -25,6 +25,17 @@ let allCalls = [];
 let nextIncidentData = { id: '...', seq: 1, year: new Date().getFullYear() };
 let currentUser = null;
 let currentStatsYear = new Date().getFullYear(); 
+let lastFocusedElement = null;
+
+// Treat all database and CSV values as untrusted before inserting them into markup.
+function escapeHTML(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
 
 // Sorting and Filtering State
 let sortState = { col: 'datetime', asc: false }; // Default: Newest first
@@ -60,11 +71,16 @@ onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
         document.getElementById('connectionStatus').innerHTML = '<span class="text-green-500 font-bold uppercase">Online</span>';
+        document.getElementById('submitBtn').disabled = false;
         setupRealtimeListener();
         loadConfiguration();
         selectType('EMS');
         setNowDefaults(); // Ensure date/time is set on load
         toggleMutualAid(); // Ensure fields are correctly hidden/not required on load
+    } else {
+        currentUser = null;
+        document.getElementById('connectionStatus').innerHTML = '<span class="text-yellow-500 uppercase">Offline</span>';
+        document.getElementById('submitBtn').disabled = true;
     }
 });
 
@@ -116,12 +132,14 @@ function updateSortIcons() {
     document.querySelectorAll('.sortable .sort-icon').forEach(icon => {
         icon.className = 'fa-solid fa-sort sort-icon';
         icon.parentElement.classList.remove('active-sort');
+        icon.parentElement.setAttribute('aria-sort', 'none');
     });
 
     // Set active icon
     const th = document.getElementById(`th-${sortState.col}`);
     if (th) {
         th.classList.add('active-sort');
+        th.setAttribute('aria-sort', sortState.asc ? 'ascending' : 'descending');
         const icon = th.querySelector('.sort-icon');
         icon.className = sortState.asc ? 'fa-solid fa-sort-up sort-icon' : 'fa-solid fa-sort-down sort-icon';
     }
@@ -162,11 +180,16 @@ window.openEditModal = function(id) {
         document.getElementById('edit_mutualAidDept').value = call.mutualAidDept || '';
     }
 
+    lastFocusedElement = document.activeElement;
     document.getElementById('editModal').classList.remove('hidden');
+    document.getElementById('edit_incidentNumber').focus();
 }
 
 window.closeEditModal = function() {
     document.getElementById('editModal').classList.add('hidden');
+    if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+        lastFocusedElement.focus();
+    }
 }
 
 window.saveEdit = async function() {
@@ -186,6 +209,25 @@ window.saveEdit = async function() {
         const emsDisp = (responseType === 'EMS' || responseType === 'Both') 
             ? document.getElementById('edit_emsDisposition').value 
             : null;
+
+        const requiredEditFields = [
+            ['edit_incidentNumber', 'INCIDENT ID'],
+            ['edit_dispatchDate', 'DISPATCH DATE'],
+            ['edit_dispatchTime', 'DISPATCH TIME'],
+            ['edit_callNature', 'CALL NATURE'],
+            ['edit_address', 'ADDRESS']
+        ];
+        const missingField = requiredEditFields.find(([fieldId]) => !document.getElementById(fieldId).value.trim());
+        if (missingField) {
+            showToast(`${missingField[1]} IS REQUIRED`, true);
+            document.getElementById(missingField[0]).focus();
+            return;
+        }
+        if ((responseType === 'EMS' || responseType === 'Both') && !emsDisp) {
+            showToast('EMS DISPOSITION IS REQUIRED', true);
+            document.getElementById('edit_emsDisposition').focus();
+            return;
+        }
         
         const newIncNum = document.getElementById('edit_incidentNumber').value.toUpperCase();
 
@@ -235,24 +277,6 @@ window.saveEdit = async function() {
     }
 }
 
-window.deleteCall = async function() {
-    const id = document.getElementById('edit_docId').value;
-    if (!id) return;
-
-    if (confirm("Are you sure you want to permanently delete this call record? This action cannot be undone.")) {
-        try {
-            const callsRef = doc(db, 'artifacts', appId, 'public', 'data', 'calls', id);
-            await deleteDoc(callsRef);
-            
-            closeEditModal();
-            showToast("CALL DELETED SUCCESSFULLY");
-        } catch (e) {
-            console.error("Delete Error:", e);
-            showToast("FAILED TO DELETE CALL", true);
-        }
-    }
-}
-
 // --- EDIT MODAL HELPERS ---
 window.selectEditType = function(type) {
     document.getElementById('edit_responseType').value = type;
@@ -266,16 +290,20 @@ window.selectEditType = function(type) {
     btnEms.className = baseClass;
     btnFire.className = baseClass;
     btnBoth.className = baseClass;
+    [btnEms, btnFire, btnBoth].forEach(btn => btn.setAttribute('aria-pressed', 'false'));
     
     if(type === 'EMS') {
         btnEms.className = "flex items-center justify-center py-2.5 rounded-lg font-bold border border-blue-500 bg-blue-600 text-white shadow-lg shadow-blue-900/50 transform scale-[1.02] transition uppercase text-xs";
         dispSection.classList.remove('hidden');
+        btnEms.setAttribute('aria-pressed', 'true');
     } else if (type === 'Fire') {
         btnFire.className = "flex items-center justify-center py-2.5 rounded-lg font-bold border border-red-500 bg-red-600 text-white shadow-lg shadow-red-900/50 transform scale-[1.02] transition uppercase text-xs";
         dispSection.classList.add('hidden');
+        btnFire.setAttribute('aria-pressed', 'true');
     } else if (type === 'Both') {
         btnBoth.className = "flex items-center justify-center py-2.5 rounded-lg font-bold border border-purple-500 bg-purple-600 text-white shadow-lg shadow-purple-900/50 transform scale-[1.02] transition uppercase text-xs";
         dispSection.classList.remove('hidden');
+        btnBoth.setAttribute('aria-pressed', 'true');
     }
 }
 
@@ -427,20 +455,29 @@ window.selectType = function(type) {
     const btnFire = document.getElementById('btn-fire');
     const btnBoth = document.getElementById('btn-both');
     const dispSection = document.getElementById('emsDispositionSection');
+    const dispSelect = document.getElementById('emsDisposition');
     const baseClass = "flex items-center justify-center py-2.5 rounded-lg font-bold border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 transition uppercase";
     btnEms.className = baseClass;
     btnFire.className = baseClass;
     btnBoth.className = baseClass;
+    [btnEms, btnFire, btnBoth].forEach(btn => btn.setAttribute('aria-pressed', 'false'));
     
     if(type === 'EMS') {
         btnEms.className = "flex items-center justify-center py-2.5 rounded-lg font-bold border border-blue-500 bg-blue-600 text-white shadow-lg shadow-blue-900/50 transform scale-[1.02] transition uppercase";
         dispSection.classList.remove('hidden');
+        dispSelect.required = true;
+        btnEms.setAttribute('aria-pressed', 'true');
     } else if (type === 'Fire') {
         btnFire.className = "flex items-center justify-center py-2.5 rounded-lg font-bold border border-red-500 bg-red-600 text-white shadow-lg shadow-red-900/50 transform scale-[1.02] transition uppercase";
         dispSection.classList.add('hidden');
+        dispSelect.required = false;
+        dispSelect.value = '';
+        btnFire.setAttribute('aria-pressed', 'true');
     } else if (type === 'Both') {
         btnBoth.className = "flex items-center justify-center py-2.5 rounded-lg font-bold border border-purple-500 bg-purple-600 text-white shadow-lg shadow-purple-900/50 transform scale-[1.02] transition uppercase";
         dispSection.classList.remove('hidden');
+        dispSelect.required = true;
+        btnBoth.setAttribute('aria-pressed', 'true');
     }
 }
 
@@ -491,14 +528,16 @@ window.exportToCSV = function() {
         }
         const escapeCsv = (txt) => {
             if (!txt) return '';
-            const str = String(txt);
-            if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+            let str = String(txt);
+            // Prevent spreadsheet programs from interpreting imported values as formulas.
+            if (/^[=+\-@]/.test(str)) str = `'${str}`;
+            if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
                 return `"${str.replace(/"/g, '""')}"`;
             }
             return str;
         };
         return [
-            c.incidentNumber,
+            escapeCsv(c.incidentNumber),
             reported,
             escapeCsv(c.callNature),
             escapeCsv(c.address),
@@ -519,12 +558,60 @@ window.exportToCSV = function() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+function parseCSV(text) {
+    const rows = [];
+    let row = [];
+    let value = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const next = text[i + 1];
+
+        if (char === '"' && inQuotes && next === '"') {
+            value += '"';
+            i++;
+        } else if (char === '"') {
+            inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+            row.push(value);
+            value = '';
+        } else if ((char === '\n' || char === '\r') && !inQuotes) {
+            if (char === '\r' && next === '\n') i++;
+            row.push(value);
+            if (row.some(cell => cell.trim() !== '')) rows.push(row);
+            row = [];
+            value = '';
+        } else {
+            value += char;
+        }
+    }
+
+    if (inQuotes) throw new Error('CSV contains an unclosed quoted field.');
+    row.push(value);
+    if (row.some(cell => cell.trim() !== '')) rows.push(row);
+    return rows;
 }
 
 // --- CSV IMPORT LOGIC ---
 window.handleFileUpload = function(input) {
     const file = input.files[0];
     if (!file) return;
+
+    if (!currentUser) {
+        showToast('WAIT FOR THE DATABASE CONNECTION BEFORE IMPORTING', true);
+        input.value = '';
+        return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+        showToast('CSV FILE MUST BE 5 MB OR SMALLER', true);
+        input.value = '';
+        return;
+    }
 
     const statusEl = document.getElementById('importStatus');
     statusEl.textContent = "READING FILE...";
@@ -535,21 +622,6 @@ window.handleFileUpload = function(input) {
         try {
             statusEl.textContent = "PARSING CSV...";
             
-            // Simple CSV Parse Logic
-            const parseCSV = (str) => {
-                const arr = [];
-                let quote = false;
-                let row = [];
-                let col = '';
-                for (let c of str) {
-                    if (c === '"') { quote = !quote; continue; }
-                    if (c === ',' && !quote) { row.push(col); col = ''; continue; }
-                    if (c === '\n' && !quote) { row.push(col); col = ''; arr.push(row); row = []; continue; }
-                    col += c;
-                }
-                if (row.length > 0) arr.push(row);
-                return arr;
-            }
             const rows = parseCSV(text);
             
             if (rows.length < 2) {
@@ -572,7 +644,10 @@ window.handleFileUpload = function(input) {
 
                 try {
                     const incNum = row[0]?.trim().toUpperCase();
-                    if (!incNum) continue;
+                    if (!incNum || !/^\d{2}(?:HT|PL)\d+$/.test(incNum)) {
+                        parseErrors++;
+                        continue;
+                    }
 
                     const reported = row[1]?.trim(); 
                     const nature = row[2]?.trim().toUpperCase();
@@ -586,13 +661,20 @@ window.handleFileUpload = function(input) {
                     let formattedDate = '';
                     let formattedTime = '';
                     if (reported && reported.includes(' ')) {
-                        const [datePart, timePart] = reported.split(' ');
+                        const [datePart, timePart] = reported.split(/\s+/, 2);
                         const [m, d, y] = datePart.split('/');
-                        formattedDate = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
-                        formattedTime = timePart;
-                        if (timePart.length === 4 && timePart.indexOf(':') === 1) {
-                            formattedTime = '0' + timePart;
+                        if (m && d && /^\d{4}$/.test(y || '') && timePart) {
+                            formattedDate = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+                            formattedTime = timePart;
+                            if (timePart.length === 4 && timePart.indexOf(':') === 1) {
+                                formattedTime = '0' + timePart;
+                            }
                         }
+                    }
+
+                    if (!/^\d{4}-\d{2}-\d{2}$/.test(formattedDate) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(formattedTime)) {
+                        parseErrors++;
+                        continue;
                     }
 
                     const yearShort = incNum.substring(0, 2); 
@@ -696,7 +778,7 @@ window.handleFileUpload = function(input) {
                 }
             }
 
-            if (confirm(`IMPORT SUMMARY:\n- NEW RECORDS: ${creates}\n- UPDATING RECORDS: ${updates}\n\nPROCEED?`)) {
+            if (confirm(`IMPORT SUMMARY:\n- NEW RECORDS: ${creates}\n- UPDATING RECORDS: ${updates}\n- SKIPPED INVALID ROWS: ${parseErrors}\n\nPROCEED?`)) {
                 statusEl.textContent = `PROCESSING...`;
                 await batchUpload(ops);
                 statusEl.textContent = "DONE!";
@@ -781,9 +863,12 @@ if(addrInput && suggestionBox) {
         matches.forEach(addr => {
             const div = document.createElement('div');
             div.className = "px-4 py-2 hover:bg-gray-700 cursor-pointer text-sm text-gray-300 border-b border-gray-700 last:border-0 uppercase font-medium";
-            const regex = new RegExp(`(${val})`, 'gi');
-            const highlighted = addr.replace(regex, '<span class="text-blue-400 font-bold">$1</span>');
-            div.innerHTML = highlighted;
+            const matchIndex = addr.toLowerCase().indexOf(val.toLowerCase());
+            div.append(document.createTextNode(addr.slice(0, matchIndex)));
+            const highlighted = document.createElement('span');
+            highlighted.className = 'text-blue-400 font-bold';
+            highlighted.textContent = addr.slice(matchIndex, matchIndex + val.length);
+            div.append(highlighted, document.createTextNode(addr.slice(matchIndex + val.length)));
             div.onclick = () => {
                 addrInput.value = addr;
                 suggestionBox.classList.add('hidden');
@@ -981,8 +1066,14 @@ window.renderTable = function() {
 
     // 4. Sort Data
     filtered.sort((a, b) => {
-        let valA = a[sortState.col];
-        let valB = b[sortState.col];
+        const fieldMap = {
+            nature: 'callNature',
+            type: 'responseType',
+            disposition: 'emsDisposition'
+        };
+        const field = fieldMap[sortState.col] || sortState.col;
+        let valA = a[field];
+        let valB = b[field];
         
         // Special handlers
         if (sortState.col === 'incident') {
@@ -1044,30 +1135,41 @@ window.renderTable = function() {
         if (call.mutualAid) {
             const maColor = call.mutualAidType === 'Given' ? 'text-yellow-400' : 'text-green-400';
             const icon = call.mutualAidType === 'Given' ? 'fa-arrow-right' : 'fa-arrow-left';
+            const safeMaType = escapeHTML(call.mutualAidType || 'UNKNOWN');
+            const safeMaDept = escapeHTML(call.mutualAidDept || '');
             maDisplay = `<div class="text-xs">
-                <span class="${maColor} font-bold"><i class="fa-solid ${icon}"></i> ${call.mutualAidType.toUpperCase()}</span>
-                <div class="text-gray-400 truncate w-24" title="${call.mutualAidDept}">${call.mutualAidDept}</div>
+                <span class="${maColor} font-bold"><i class="fa-solid ${icon}"></i> ${safeMaType.toUpperCase()}</span>
+                <div class="text-gray-400 truncate w-24" title="${safeMaDept}">${safeMaDept}</div>
             </div>`;
         }
         
         let notesDisplay = call.notes || '';
         if(notesDisplay.length > 50) notesDisplay = notesDisplay.substring(0,50) + '...';
 
-        let dispDisplay = call.emsDisposition || '<span class="text-gray-600">-</span>';
+        const safeIncident = escapeHTML(call.incidentNumber);
+        const safeDate = escapeHTML(dateDisplay);
+        const safeTime = escapeHTML(call.dispatchTime);
+        const safeNature = escapeHTML(call.callNature);
+        const safeAddress = escapeHTML(call.address);
+        const safeUnits = escapeHTML(call.units);
+        const safeDisposition = escapeHTML(call.emsDisposition);
+        const safeNotes = escapeHTML(call.notes);
+        const safeNotesDisplay = escapeHTML(notesDisplay);
+        let dispDisplay = safeDisposition || '<span class="text-gray-600">-</span>';
 
         tr.innerHTML = `
-            <td class="p-4 font-mono font-bold text-white">${call.incidentNumber}</td>
+            <td class="p-4 font-mono font-bold text-white">${safeIncident}</td>
             <td class="p-4 text-gray-300">
-                <div>${dateDisplay}</div>
-                <div class="text-xs text-gray-500 font-mono tracking-wide">${call.dispatchTime}</div>
+                <div>${safeDate}</div>
+                <div class="text-xs text-gray-500 font-mono tracking-wide">${safeTime}</div>
             </td>
-            <td class="p-4 font-medium">${call.callNature}</td>
-            <td class="p-4 text-gray-400 truncate max-w-[150px]" title="${call.address}">${call.address}</td>
+            <td class="p-4 font-medium">${safeNature}</td>
+            <td class="p-4 text-gray-400 truncate max-w-[150px]" title="${safeAddress}">${safeAddress}</td>
             <td class="p-4">${typeBadge}</td>
-            <td class="p-4 text-gray-400 text-xs truncate max-w-[100px]" title="${call.units}">${call.units}</td>
+            <td class="p-4 text-gray-400 text-xs truncate max-w-[100px]" title="${safeUnits}">${safeUnits}</td>
             <td class="p-4">${maDisplay}</td>
-            <td class="p-4 text-gray-400 text-xs truncate max-w-[100px]" title="${call.emsDisposition || ''}">${dispDisplay}</td>
-            <td class="p-4 text-gray-400 text-xs max-w-[200px]" title="${call.notes}">${notesDisplay}</td>
+            <td class="p-4 text-gray-400 text-xs truncate max-w-[100px]" title="${safeDisposition}">${dispDisplay}</td>
+            <td class="p-4 text-gray-400 text-xs max-w-[200px]" title="${safeNotes}">${safeNotesDisplay}</td>
         `;
         tbody.appendChild(tr);
     });
@@ -1142,7 +1244,7 @@ function updateStats() {
                 const row = document.createElement('div');
                 row.innerHTML = `
                     <div class="flex justify-between text-xs mb-1 uppercase font-semibold">
-                        <span>${name}</span>
+                        <span>${escapeHTML(name)}</span>
                         <span>${count}</span>
                     </div>
                     <div class="w-full bg-gray-700 rounded-full h-2">
@@ -1179,7 +1281,7 @@ function updateStats() {
                 const row = document.createElement('div');
                 row.innerHTML = `
                     <div class="flex justify-between text-xs mb-1 uppercase font-semibold">
-                        <span class="truncate pr-2" title="${addr}">${addr}</span>
+                        <span class="truncate pr-2" title="${escapeHTML(addr)}">${escapeHTML(addr)}</span>
                         <span>${count}</span>
                     </div>
                     <div class="w-full bg-gray-700 rounded-full h-2">
@@ -1239,7 +1341,7 @@ function updateStats() {
         sortedDepts.forEach(([name, count]) => {
             const li = document.createElement('li');
             li.className = "flex justify-between border-b border-gray-700 py-1 last:border-0";
-            li.innerHTML = `<span>${name}</span> <span class="font-bold text-white">${count}</span>`;
+            li.innerHTML = `<span>${escapeHTML(name)}</span> <span class="font-bold text-white">${count}</span>`;
             deptListEl.appendChild(li);
         });
     }
@@ -1302,7 +1404,7 @@ function updateStats() {
                 const row = document.createElement('div');
                 row.innerHTML = `
                     <div class="flex justify-between text-xs mb-1 uppercase font-semibold">
-                        <span>${name}</span>
+                        <span>${escapeHTML(name)}</span>
                         <span>${count}</span>
                     </div>
                     <div class="w-full bg-gray-700 rounded-full h-2">
@@ -1368,6 +1470,8 @@ window.showToast = function(msg, isError = false) {
     
     toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-xl transform transition-all duration-300 z-50 flex items-center gap-3 ${isError ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`;
     msgEl.textContent = msg;
+    toast.setAttribute('role', isError ? 'alert' : 'status');
+    toast.setAttribute('aria-live', isError ? 'assertive' : 'polite');
     toast.classList.remove('translate-y-20', 'opacity-0');
     setTimeout(() => {
         toast.classList.add('translate-y-20', 'opacity-0');
@@ -1398,8 +1502,8 @@ window.switchTab = function(tabName) {
     const btnHistory = document.getElementById('btn-history');
     const btnStats = document.getElementById('btn-stats');
 
-    const inactiveClass = "px-4 py-2 rounded-lg bg-gray-700 text-gray-300 font-medium hover:bg-gray-600 transition border border-gray-600 uppercase text-sm tracking-wider";
-    const activeClass = "px-4 py-2 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 transition shadow-md border border-red-500 uppercase text-sm tracking-wider";
+    const inactiveClass = "px-2 sm:px-4 py-2 rounded-lg bg-gray-700 text-gray-300 font-medium hover:bg-gray-600 transition border border-gray-600 uppercase text-xs sm:text-sm tracking-wider";
+    const activeClass = "px-2 sm:px-4 py-2 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 transition shadow-md border border-red-500 uppercase text-xs sm:text-sm tracking-wider";
     
     btnEntry.className = inactiveClass;
     btnHistory.className = inactiveClass;
@@ -1408,17 +1512,27 @@ window.switchTab = function(tabName) {
     entryTab.classList.add('hidden');
     historyTab.classList.add('hidden');
     statsTab.classList.add('hidden');
+    [btnEntry, btnHistory, btnStats].forEach(btn => {
+        btn.setAttribute('aria-selected', 'false');
+        btn.tabIndex = -1;
+    });
 
     if (tabName === 'entry') {
         entryTab.classList.remove('hidden');
         btnEntry.className = activeClass;
+        btnEntry.setAttribute('aria-selected', 'true');
+        btnEntry.tabIndex = 0;
     } else if (tabName === 'history') {
         historyTab.classList.remove('hidden');
         btnHistory.className = activeClass;
+        btnHistory.setAttribute('aria-selected', 'true');
+        btnHistory.tabIndex = 0;
         renderTable();
     } else if (tabName === 'stats') {
         statsTab.classList.remove('hidden');
         btnStats.className = activeClass;
+        btnStats.setAttribute('aria-selected', 'true');
+        btnStats.tabIndex = 0;
         updateStats(); 
     }
 }
@@ -1430,3 +1544,18 @@ window.resetForm = function() {
     selectType('EMS'); 
     calculateNextIncidentId(); 
 }
+
+document.querySelectorAll('th.sortable').forEach(header => {
+    header.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            handleSort(header.id.replace('th-', ''));
+        }
+    });
+});
+
+document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !document.getElementById('editModal').classList.contains('hidden')) {
+        closeEditModal();
+    }
+});
