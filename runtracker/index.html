@@ -100,6 +100,7 @@
                                     <option value="NO CREW/MA">NO CREW/MA</option>
                                     <option value="OTHER EMS XPORT">OTHER EMS XPORT</option>
                                     <option value="76 COVERAGE">76 COVERAGE</option>
+                                    <option value="2ND RUN">2ND RUN</option>
                                     <option value="CANCELLED">CANCELLED</option>
                                 </select>
                             </div>
@@ -122,6 +123,11 @@
                             </div>
                         <input type="text" id="units" oninput="forceCaps(this)" placeholder="E.G. E1, M2, C501..." class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition uppercase">
                         <p class="text-xs text-gray-500 mt-1 uppercase">Tap chips above to add, or type manually.</p>
+                    </div>
+
+                    <div class="flex items-center gap-3 bg-gray-900/50 p-4 rounded-lg border border-gray-700">
+                        <input type="checkbox" id="is76Sunday" name="is76Sunday" class="w-5 h-5 text-red-600 rounded focus:ring-red-500 border-gray-600 bg-gray-800">
+                        <label for="is76Sunday" class="font-medium text-white select-none cursor-pointer uppercase tracking-wide">76 Sunday?</label>
                     </div>
 
                     <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
@@ -204,6 +210,20 @@
                         </div>
 
                         <div>
+                            <label for="filterDayOfWeek" class="block text-xs text-gray-500 uppercase font-bold mb-1">Day of Week</label>
+                            <select id="filterDayOfWeek" onchange="renderTable()" class="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1 text-xs text-white uppercase">
+                                <option value="">ALL DAYS</option>
+                                <option value="0">SUNDAY</option>
+                                <option value="1">MONDAY</option>
+                                <option value="2">TUESDAY</option>
+                                <option value="3">WEDNESDAY</option>
+                                <option value="4">THURSDAY</option>
+                                <option value="5">FRIDAY</option>
+                                <option value="6">SATURDAY</option>
+                            </select>
+                        </div>
+
+                        <div>
                             <label class="block text-xs text-gray-500 uppercase font-bold mb-1">Response Type</label>
                             <select id="filterType" onchange="renderTable()" class="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1 text-xs text-white uppercase">
                                 <option value="">ALL TYPES</option>
@@ -228,6 +248,7 @@
                                 <option value="NO CREW/MA">NO CREW/MA</option>
                                 <option value="OTHER EMS XPORT">OTHER EMS XPORT</option>
                                 <option value="76 COVERAGE">76 COVERAGE</option>
+                                <option value="2ND RUN">2ND RUN</option>
                                 <option value="CANCELLED">CANCELLED</option>
                             </select>
                         </div>
@@ -391,8 +412,16 @@
                         </div>
                     </div>
                     <h4 class="text-xs text-gray-400 uppercase font-bold mb-2">Most Frequent Depts</h4>
-                    <ul id="stats-ma-depts" class="text-sm space-y-1 text-gray-300">
-                        </ul>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="min-w-0">
+                            <h5 class="text-xs text-yellow-400 uppercase font-bold mb-2">Given (To)</h5>
+                            <ul id="stats-ma-depts-given" class="text-sm space-y-1 text-gray-300"></ul>
+                        </div>
+                        <div class="min-w-0">
+                            <h5 class="text-xs text-green-400 uppercase font-bold mb-2">Received (From)</h5>
+                            <ul id="stats-ma-depts-received" class="text-sm space-y-1 text-gray-300"></ul>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="widget-crew" class="bg-gray-800 rounded-xl border border-gray-700 shadow-lg p-6">
@@ -401,17 +430,32 @@
                         <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700 text-center">
                             <span class="block text-gray-400 text-xs uppercase font-bold">Day Crew</span>
                             <span id="stat-crew-day" class="text-2xl font-bold text-blue-400">0</span>
+                            <span id="stat-crew-day-pct" class="block text-xs text-gray-500 font-bold mt-1">0% RESP</span>
                         </div>
                         <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700 text-center">
                             <span class="block text-gray-400 text-xs uppercase font-bold">Volunteer</span>
                             <span id="stat-crew-vol" class="text-2xl font-bold text-orange-400">0</span>
                             <span id="stat-crew-vol-pct" class="block text-xs text-gray-500 font-bold mt-1">0% COVERED</span>
                         </div>
+                        <div class="col-span-2 bg-gray-900/50 p-4 rounded-lg border border-gray-700 text-center">
+                            <span class="block text-gray-400 text-xs uppercase font-bold">Combined</span>
+                            <span id="stat-crew-combined" class="text-2xl font-bold text-white">0</span>
+                            <span id="stat-crew-combined-pct" class="block text-xs text-gray-500 font-bold mt-1">0% RESP</span>
+                        </div>
+                        <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700 text-center">
+                            <span class="block text-gray-400 text-xs uppercase font-bold">76 Coverage</span>
+                            <span id="stat-crew-76-coverage" class="text-2xl font-bold text-white">0</span>
+                        </div>
+                        <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700 text-center">
+                            <span class="block text-gray-400 text-xs uppercase font-bold">76 Sunday</span>
+                            <span id="stat-crew-76-sunday" class="text-2xl font-bold text-white">0</span>
+                        </div>
                     </div>
                     <div class="bg-gray-900/30 p-3 rounded border border-gray-700 text-xs text-gray-400">
                         <p class="font-bold mb-1">SCHEDULE (EMS/BOTH ONLY):</p>
                         <p id="stats-sched-text-wd">M-F: ...</p>
                         <p id="stats-sched-text-we">S-S: ...</p>
+                        <p>Saturday 08:00-18:00: Always Volunteer</p>
                         <p>All other times: Volunteer</p>
                     </div>
                 </div>
@@ -419,7 +463,15 @@
                 <div id="widget-voldispo" class="bg-gray-800 rounded-xl border border-gray-700 shadow-lg p-6">
                     <h3 class="font-bold text-lg text-white mb-4 uppercase border-b border-gray-700 pb-2">EMS Volunteer Dispositions</h3>
                     <div id="stats-vol-dispo" class="space-y-3">
-                        <div class="text-gray-500 text-sm italic">No data available</div>
+                        <div>
+                            <div class="flex justify-between text-xs mb-1 uppercase font-semibold">
+                                <span>2ND RUN</span>
+                                <span>0</span>
+                            </div>
+                            <div class="w-full bg-gray-700 rounded-full h-2">
+                                <div class="bg-orange-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -486,6 +538,7 @@
                                 <option value="NO CREW/MA">NO CREW/MA</option>
                                 <option value="OTHER EMS XPORT">OTHER EMS XPORT</option>
                                 <option value="76 COVERAGE">76 COVERAGE</option>
+                                <option value="2ND RUN">2ND RUN</option>
                                 <option value="CANCELLED">CANCELLED</option>
                             </select>
                         </div>
@@ -502,6 +555,11 @@
                     <div id="edit_unitChips" class="flex flex-wrap gap-2 mb-2 uppercase">
                         </div>
                     <input type="text" id="edit_units" oninput="forceCaps(this)" class="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition uppercase">
+                </div>
+
+                <div class="flex items-center gap-3 bg-gray-900/50 p-4 rounded-lg border border-gray-700">
+                    <input type="checkbox" id="edit_is76Sunday" class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 border-gray-600 bg-gray-800">
+                    <label for="edit_is76Sunday" class="font-medium text-white select-none cursor-pointer uppercase tracking-wide">76 Sunday?</label>
                 </div>
 
                 <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700">

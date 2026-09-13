@@ -105,6 +105,7 @@ window.toggleFilterPanel = function() {
 window.resetFilters = function() {
     document.getElementById('filterDateStart').value = '';
     document.getElementById('filterDateEnd').value = '';
+    document.getElementById('filterDayOfWeek').value = '';
     document.getElementById('filterType').value = '';
     document.getElementById('filterNature').value = '';
     document.getElementById('filterDisposition').value = '';
@@ -167,6 +168,7 @@ window.openEditModal = function(id) {
     document.getElementById('edit_units').value = call.units || '';
     document.getElementById('edit_notes').value = call.notes || '';
     document.getElementById('edit_emsDisposition').value = call.emsDisposition || '';
+    document.getElementById('edit_is76Sunday').checked = call.is76Sunday === true;
     
     selectEditType(call.responseType || 'EMS');
 
@@ -254,6 +256,7 @@ window.saveEdit = async function() {
             responseType: responseType,
             emsDisposition: emsDisp,
             address: document.getElementById('edit_address').value.toUpperCase(),
+            is76Sunday: document.getElementById('edit_is76Sunday').checked,
             units: document.getElementById('edit_units').value.toUpperCase(),
             mutualAid: isMutualAid,
             mutualAidType: isMutualAid ? document.getElementById('edit_mutualAidType').value : null,
@@ -1014,6 +1017,7 @@ form.addEventListener('submit', async (e) => {
             responseType: responseType,
             emsDisposition: emsDisp,
             address: document.getElementById('address').value.toUpperCase(),
+            is76Sunday: document.getElementById('is76Sunday').checked,
             units: document.getElementById('units').value.toUpperCase(),
             mutualAid: isMutualAid,
             mutualAidType: isMutualAid ? document.getElementById('mutualAidType').value : null,
@@ -1053,6 +1057,7 @@ window.renderTable = function() {
     const search = document.getElementById('searchInput').value.toLowerCase();
     const filterStart = document.getElementById('filterDateStart').value;
     const filterEnd = document.getElementById('filterDateEnd').value;
+    const filterDayOfWeek = document.getElementById('filterDayOfWeek').value;
     const filterType = document.getElementById('filterType').value;
     const filterNature = document.getElementById('filterNature').value.toUpperCase();
     const filterDisp = document.getElementById('filterDisposition').value;
@@ -1068,6 +1073,15 @@ window.renderTable = function() {
         // Date Range
         if (filterStart && call.dispatchDate < filterStart) return false;
         if (filterEnd && call.dispatchDate > filterEnd) return false;
+
+        if (filterDayOfWeek !== '') {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(call.dispatchDate || '')) return false;
+            const [year, month, day] = call.dispatchDate.split('-').map(Number);
+            // Use the local calendar date so timezone offsets cannot shift the weekday.
+            const date = new Date(year, month - 1, day);
+            if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return false;
+            if (date.getDay() !== Number(filterDayOfWeek)) return false;
+        }
 
         // Type
         if (filterType && filterType !== 'BOTH' && call.responseType !== filterType && call.responseType !== 'Both') return false;
@@ -1244,6 +1258,9 @@ function updateStats() {
             const day = dateObj.getDay(); 
             const hour = h;
 
+            // Saturday 08:00-18:00 is volunteer time regardless of the saved schedule.
+            if (day === 6 && hour >= 8 && hour < 18) return false;
+
             if (day >= 1 && day <= 5) {
                 return (hour >= wdStart && hour < wdEnd);
             } else {
@@ -1334,7 +1351,8 @@ function updateStats() {
         let receivedCount = 0;
         let givenDay = 0, givenVol = 0;
         let receivedDay = 0, receivedVol = 0;
-        const maDepts = {};
+        const givenDepts = Object.create(null);
+        const receivedDepts = Object.create(null);
 
         thisYearCalls.forEach(c => {
             if (c.responseType === 'Fire') return;
@@ -1348,10 +1366,12 @@ function updateStats() {
                     receivedCount++;
                     if (isDay) receivedDay++; else receivedVol++;
                 }
-                if (c.mutualAidDept) {
+                const deptCounts = c.mutualAidType === 'Given' ? givenDepts
+                    : c.mutualAidType === 'Received' ? receivedDepts : null;
+                if (c.mutualAidDept && deptCounts) {
                     const depts = c.mutualAidDept.split(',').map(s => s.trim());
                     depts.forEach(d => {
-                        if(d) maDepts[d] = (maDepts[d] || 0) + 1;
+                        if(d) deptCounts[d] = (deptCounts[d] || 0) + 1;
                     });
                 }
             }
@@ -1364,17 +1384,21 @@ function updateStats() {
         document.getElementById('stat-ma-received-day').textContent = receivedDay;
         document.getElementById('stat-ma-received-vol').textContent = receivedVol;
 
-        const sortedDepts = Object.entries(maDepts)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, limit); 
-
-        const deptListEl = document.getElementById('stats-ma-depts');
-        deptListEl.innerHTML = '';
-        sortedDepts.forEach(([name, count]) => {
-            const li = document.createElement('li');
-            li.className = "flex justify-between border-b border-gray-700 py-1 last:border-0";
-            li.innerHTML = `<span>${escapeHTML(name)}</span> <span class="font-bold text-white">${count}</span>`;
-            deptListEl.appendChild(li);
+        [['given', givenDepts], ['received', receivedDepts]].forEach(([direction, counts]) => {
+            const sortedDepts = Object.entries(counts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, limit);
+            const deptListEl = document.getElementById(`stats-ma-depts-${direction}`);
+            deptListEl.innerHTML = '';
+            if (sortedDepts.length === 0) {
+                deptListEl.innerHTML = '<li class="text-gray-500 text-sm italic">No data available</li>';
+            }
+            sortedDepts.forEach(([name, count]) => {
+                const li = document.createElement('li');
+                li.className = "flex justify-between gap-2 border-b border-gray-700 py-1 last:border-0";
+                li.innerHTML = `<span class="min-w-0 break-words">${escapeHTML(name)}</span> <span class="shrink-0 font-bold text-white">${count}</span>`;
+                deptListEl.appendChild(li);
+            });
         });
     }
 
@@ -1382,18 +1406,22 @@ function updateStats() {
     const wVolDispo = document.getElementById('widget-voldispo');
 
     let dayCrewCount = 0;
+    let dayNoCrewCount = 0;
+    let coverage76Count = 0;
     let volunteerCount = 0;
     let volNoCrewCount = 0; // NEW: Track missed calls
-    const volDispCounts = {};
+    const volDispCounts = { '2ND RUN': 0 };
 
     document.getElementById('stats-sched-text-wd').textContent = `M-F: ${String(wdStart).padStart(2,'0')}:00 - ${String(wdEnd).padStart(2,'0')}:00 (Day Crew)`;
     document.getElementById('stats-sched-text-we').textContent = `S-S: ${String(weStart).padStart(2,'0')}:00 - ${String(weEnd).padStart(2,'0')}:00 (Day Crew)`;
 
     thisYearCalls.forEach(c => {
         if (c.responseType === 'Fire') return;
+        if (c.emsDisposition === '76 COVERAGE') coverage76Count++;
         const isDayCrew = checkDayCrew(c);
         if (isDayCrew) {
             dayCrewCount++;
+            if (c.emsDisposition === 'NO CREW/MA') dayNoCrewCount++;
         } else {
             volunteerCount++;
             const disp = c.emsDisposition || 'NOT RECORDED';
@@ -1408,6 +1436,13 @@ function updateStats() {
         wCrew.classList.remove('hidden');
         document.getElementById('stat-crew-day').textContent = dayCrewCount;
         document.getElementById('stat-crew-vol').textContent = volunteerCount;
+        document.getElementById('stat-crew-76-coverage').textContent = coverage76Count;
+        document.getElementById('stat-crew-76-sunday').textContent = thisYearCalls.filter(c => c.is76Sunday === true).length;
+
+        const dayPct = dayCrewCount > 0
+            ? (((dayCrewCount - dayNoCrewCount) / dayCrewCount) * 100).toFixed(0)
+            : 0;
+        document.getElementById('stat-crew-day-pct').textContent = `${dayPct}% RESP`;
 
         // NEW: Calculate Percentage
         const volPct = volunteerCount > 0 
@@ -1415,6 +1450,13 @@ function updateStats() {
             : 0;
         const pctEl = document.getElementById('stat-crew-vol-pct');
         if(pctEl) pctEl.textContent = `${volPct}% RESP`;
+
+        const combinedCount = dayCrewCount + volunteerCount;
+        const combinedPct = combinedCount > 0
+            ? (((combinedCount - dayNoCrewCount - volNoCrewCount) / combinedCount) * 100).toFixed(0)
+            : 0;
+        document.getElementById('stat-crew-combined').textContent = combinedCount;
+        document.getElementById('stat-crew-combined-pct').textContent = `${combinedPct}% RESP`;
 
     }
 
@@ -1427,12 +1469,10 @@ function updateStats() {
         const sortedVolDisps = Object.entries(volDispCounts)
             .sort((a, b) => b[1] - a[1]); 
 
-        if (sortedVolDisps.length === 0) {
-            volDispListEl.innerHTML = '<div class="text-gray-500 text-sm italic">No data available</div>';
-        } else {
+        if (sortedVolDisps.length > 0) {
             const maxCount = sortedVolDisps[0][1];
             sortedVolDisps.forEach(([name, count]) => {
-                const barWidth = (count / maxCount) * 100;
+                const barWidth = maxCount > 0 ? (count / maxCount) * 100 : 0;
                 const row = document.createElement('div');
                 row.innerHTML = `
                     <div class="flex justify-between text-xs mb-1 uppercase font-semibold">
