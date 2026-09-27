@@ -174,13 +174,11 @@ window.openEditModal = function(id) {
 
     const maCheckbox = document.getElementById('edit_mutualAid');
     maCheckbox.checked = call.mutualAid || false;
+    // Initialize both fields for every entry so the reused modal cannot carry values over.
+    document.getElementById('edit_mutualAidType').value = call.mutualAid ? (call.mutualAidType || 'Given') : 'Given';
+    document.getElementById('edit_mutualAidDept').value = call.mutualAid ? (call.mutualAidDept || '') : '';
+    handleEditMutualAidTypeChange();
     toggleEditMutualAid();
-    
-    if (call.mutualAid) {
-        document.getElementById('edit_mutualAidType').value = call.mutualAidType;
-        handleEditMutualAidTypeChange();
-        document.getElementById('edit_mutualAidDept').value = call.mutualAidDept || '';
-    }
 
     lastFocusedElement = document.activeElement;
     document.getElementById('editModal').classList.remove('hidden');
