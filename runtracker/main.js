@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, doc, getDoc, writeBatch, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { EMS_DISPOSITION_OPTIONS, getEmsDispositions, formatEmsDispositions } from './ems-dispositions.js';
 
 // --- UPDATED CONFIG (pleasant-fire) ---
 const firebaseConfig = {
@@ -36,6 +37,35 @@ function escapeHTML(value) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 }
+
+function renderDispositionOptions(groupId, value = '') {
+    const group = document.getElementById(groupId);
+    const selected = getEmsDispositions(value);
+    // Preserve dispositions from older records and imports when editing.
+    const options = [...new Set([...EMS_DISPOSITION_OPTIONS, ...selected])];
+    group.replaceChildren();
+    options.forEach(disposition => {
+        const label = document.createElement('label');
+        label.className = 'flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2.5 text-sm text-white cursor-pointer hover:border-blue-500';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = disposition;
+        checkbox.checked = selected.includes(disposition);
+        checkbox.className = 'w-4 h-4 shrink-0 rounded border-gray-600 bg-gray-800 text-blue-600 focus:ring-blue-500';
+        const text = document.createElement('span');
+        text.textContent = disposition;
+        label.append(checkbox, text);
+        group.appendChild(label);
+    });
+}
+
+function readDispositionSelection(groupId) {
+    const selected = document.getElementById(groupId).querySelectorAll('input:checked');
+    return formatEmsDispositions(Array.from(selected, input => input.value));
+}
+
+renderDispositionOptions('emsDisposition');
+renderDispositionOptions('edit_emsDisposition');
 
 // Sorting and Filtering State
 let sortState = { col: 'datetime', asc: false }; // Default: Newest first
@@ -167,7 +197,7 @@ window.openEditModal = function(id) {
     document.getElementById('edit_address').value = call.address;
     document.getElementById('edit_units').value = call.units || '';
     document.getElementById('edit_notes').value = call.notes || '';
-    document.getElementById('edit_emsDisposition').value = call.emsDisposition || '';
+    renderDispositionOptions('edit_emsDisposition', call.emsDisposition);
     document.getElementById('edit_is76Sunday').checked = call.is76Sunday === true;
     
     selectEditType(call.responseType || 'EMS');
@@ -208,7 +238,7 @@ window.saveEdit = async function() {
         const isMutualAid = document.getElementById('edit_mutualAid').checked;
         const responseType = document.getElementById('edit_responseType').value;
         const emsDisp = (responseType === 'EMS' || responseType === 'Both') 
-            ? document.getElementById('edit_emsDisposition').value 
+            ? readDispositionSelection('edit_emsDisposition')
             : null;
 
         const requiredEditFields = [
@@ -226,7 +256,7 @@ window.saveEdit = async function() {
         }
         if ((responseType === 'EMS' || responseType === 'Both') && !emsDisp) {
             showToast('EMS DISPOSITION IS REQUIRED', true);
-            document.getElementById('edit_emsDisposition').focus();
+            document.getElementById('edit_emsDisposition').querySelector('input').focus();
             return;
         }
         
@@ -457,7 +487,6 @@ window.selectType = function(type) {
     const btnFire = document.getElementById('btn-fire');
     const btnBoth = document.getElementById('btn-both');
     const dispSection = document.getElementById('emsDispositionSection');
-    const dispSelect = document.getElementById('emsDisposition');
     const baseClass = "flex items-center justify-center py-2.5 rounded-lg font-bold border border-gray-600 bg-gray-800 text-gray-400 hover:bg-gray-700 transition uppercase";
     btnEms.className = baseClass;
     btnFire.className = baseClass;
@@ -467,18 +496,15 @@ window.selectType = function(type) {
     if(type === 'EMS') {
         btnEms.className = "flex items-center justify-center py-2.5 rounded-lg font-bold border border-blue-500 bg-blue-600 text-white shadow-lg shadow-blue-900/50 transform scale-[1.02] transition uppercase";
         dispSection.classList.remove('hidden');
-        dispSelect.required = true;
         btnEms.setAttribute('aria-pressed', 'true');
     } else if (type === 'Fire') {
         btnFire.className = "flex items-center justify-center py-2.5 rounded-lg font-bold border border-red-500 bg-red-600 text-white shadow-lg shadow-red-900/50 transform scale-[1.02] transition uppercase";
         dispSection.classList.add('hidden');
-        dispSelect.required = false;
-        dispSelect.value = '';
+        renderDispositionOptions('emsDisposition');
         btnFire.setAttribute('aria-pressed', 'true');
     } else if (type === 'Both') {
         btnBoth.className = "flex items-center justify-center py-2.5 rounded-lg font-bold border border-purple-500 bg-purple-600 text-white shadow-lg shadow-purple-900/50 transform scale-[1.02] transition uppercase";
         dispSection.classList.remove('hidden');
-        dispSelect.required = true;
         btnBoth.setAttribute('aria-pressed', 'true');
     }
 }
@@ -546,7 +572,7 @@ window.exportToCSV = function() {
             c.responseType === 'Fire' ? 'FIRE' : (c.responseType === 'EMS' ? 'EMS' : 'BOTH'),
             escapeCsv(c.units),
             escapeCsv(mutualAidStr),
-            escapeCsv(c.emsDisposition),
+            escapeCsv(formatEmsDispositions(c.emsDisposition)),
             escapeCsv(c.notes)
         ].join(',');
     });
@@ -688,7 +714,7 @@ window.handleFileUpload = function(input) {
                     const typeRaw = row[4]?.trim().toUpperCase(); 
                     const units = row[5]?.trim().toUpperCase();
                     const mutualAidCombined = row[6]?.trim(); 
-                    const disposition = row[7]?.trim().toUpperCase();
+                    const disposition = formatEmsDispositions(row[7]);
                     const notes = row[8]?.trim().toUpperCase();
 
                     let formattedDate = '';
@@ -1002,8 +1028,14 @@ form.addEventListener('submit', async (e) => {
         const isMutualAid = document.getElementById('mutualAid').checked;
         const responseType = document.getElementById('responseType').value;
         const emsDisp = (responseType === 'EMS' || responseType === 'Both') 
-            ? document.getElementById('emsDisposition').value 
+            ? readDispositionSelection('emsDisposition')
             : null;
+
+        if ((responseType === 'EMS' || responseType === 'Both') && !emsDisp) {
+            showToast('SELECT AT LEAST ONE EMS DISPOSITION', true);
+            document.getElementById('emsDisposition').querySelector('input').focus();
+            return;
+        }
         
         const newCall = {
             incidentNumber: nextIncidentData.id,
@@ -1089,7 +1121,7 @@ window.renderTable = function() {
         if (filterNature && (!call.callNature || !call.callNature.includes(filterNature))) return false;
 
         // Disposition
-        if (filterDisp && call.emsDisposition !== filterDisp) return false;
+        if (filterDisp && !getEmsDispositions(call.emsDisposition).includes(filterDisp)) return false;
 
         // Units
         if (filterUnits && (!call.units || !call.units.includes(filterUnits))) return false;
@@ -1118,6 +1150,11 @@ window.renderTable = function() {
         const field = fieldMap[sortState.col] || sortState.col;
         let valA = a[field];
         let valB = b[field];
+
+        if (sortState.col === 'disposition') {
+            valA = formatEmsDispositions(valA);
+            valB = formatEmsDispositions(valB);
+        }
         
         // Special handlers
         if (sortState.col === 'incident') {
@@ -1196,7 +1233,7 @@ window.renderTable = function() {
         const safeNature = escapeHTML(call.callNature);
         const safeAddress = escapeHTML(call.address);
         const safeUnits = escapeHTML(call.units);
-        const safeDisposition = escapeHTML(call.emsDisposition);
+        const safeDisposition = escapeHTML(formatEmsDispositions(call.emsDisposition));
         const safeNotes = escapeHTML(call.notes);
         const safeNotesDisplay = escapeHTML(notesDisplay);
         let dispDisplay = safeDisposition || '<span class="text-gray-600">-</span>';
@@ -1412,16 +1449,18 @@ function updateStats() {
 
     thisYearCalls.forEach(c => {
         if (c.responseType === 'Fire') return;
-        if (c.emsDisposition === '76 COVERAGE') coverage76Count++;
+        const dispositions = getEmsDispositions(c.emsDisposition);
+        if (dispositions.includes('76 COVERAGE')) coverage76Count++;
         const isDayCrew = checkDayCrew(c);
         if (isDayCrew) {
             dayCrewCount++;
-            if (c.emsDisposition === 'NO CREW/MA') dayNoCrewCount++;
+            if (dispositions.includes('NO CREW/MA')) dayNoCrewCount++;
         } else {
             volunteerCount++;
-            const disp = c.emsDisposition || 'NOT RECORDED';
-            if (disp === 'NO CREW/MA') volNoCrewCount++; // NEW: Increment missed count
-            volDispCounts[disp] = (volDispCounts[disp] || 0) + 1;
+            if (dispositions.includes('NO CREW/MA')) volNoCrewCount++;
+            (dispositions.length ? dispositions : ['NOT RECORDED']).forEach(disp => {
+                volDispCounts[disp] = (volDispCounts[disp] || 0) + 1;
+            });
         }
     });
 

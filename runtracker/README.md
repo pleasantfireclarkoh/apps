@@ -8,6 +8,7 @@ Upload all files in this folder to the root of the GitHub repository:
 
 - `index.html` — incident entry, history, CSV import/export, and statistics
 - `main.js` — application and Firebase logic
+- `ems-dispositions.js` — shared EMS disposition options and formatting
 - `styles.css` — shared interface styles
 - `config.html` — configuration screen
 - `kiosk.html` — read-only statistics display
@@ -33,4 +34,12 @@ Imports expect these columns in this order:
 
 `Incident #, Date/Time, Nature, Address, Type, Units, Mutual Aid, Disposition, Notes`
 
+EMS and Both calls allow multiple dispositions. Select all that apply in the new-call or edit form. Multiple selections use a semicolon in the existing Disposition column, for example `TRANSPORT; 2ND RUN`. Older single-disposition records remain supported. Filters match any selected disposition; disposition statistics count each selection, while crew totals count each incident once.
+
 Date/time values must use `MM/DD/YYYY HH:MM` with 24-hour time. Incident numbers must follow `YYPL#####` or `YYHT#####`. Invalid rows are skipped and counted in the confirmation message.
+
+## Verification
+
+Run `node --test tests/ems-dispositions.test.mjs` for disposition compatibility and text/CSV formatting checks.
+
+Run `node tests/ems-dispositions.browser.cjs` with Playwright available to Node and Microsoft Edge installed for the browser workflow checks. Set `PLAYWRIGHT_CHANNEL` to use another installed Chromium channel. These checks substitute sample data for Firebase, exercise creation, editing, validation, filters, CSV export/import, and both statistics screens, and never write to the live database.

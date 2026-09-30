@@ -140,6 +140,7 @@
                     <div id="stats-vol-dispo" class="space-y-3 overflow-hidden flex-1">
                         <div class="text-gray-500 text-base italic">Loading...</div>
                     </div>
+                    <p class="text-xs text-gray-400 mt-2">Each selected disposition is counted. Calls may appear in multiple categories.</p>
                 </div>
             </div>
 
@@ -205,6 +206,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getEmsDispositions } from './ems-dispositions.js';
 
         // --- UPDATED CONFIG (pleasant-fire) ---
         const firebaseConfig = {
@@ -537,18 +539,20 @@
 
             thisYearCalls.forEach(c => {
                 if (c.responseType === 'Fire') return;
-                if (c.emsDisposition === '76 COVERAGE') coverage76Count++;
+                const dispositions = getEmsDispositions(c.emsDisposition);
+                if (dispositions.includes('76 COVERAGE')) coverage76Count++;
                 
                 const isDayCrew = checkDayCrew(c);
 
                 if (isDayCrew) {
                     dayCrewCount++;
-                    if (c.emsDisposition === 'NO CREW/MA') dayNoCrewCount++;
+                    if (dispositions.includes('NO CREW/MA')) dayNoCrewCount++;
                 } else {
                     volunteerCount++;
-                    const disp = c.emsDisposition || 'NOT RECORDED';
-                    if (disp === 'NO CREW/MA') volNoCrewCount++; // NEW: Increment missed count
-                    volDispCounts[disp] = (volDispCounts[disp] || 0) + 1;
+                    if (dispositions.includes('NO CREW/MA')) volNoCrewCount++;
+                    (dispositions.length ? dispositions : ['NOT RECORDED']).forEach(disp => {
+                        volDispCounts[disp] = (volDispCounts[disp] || 0) + 1;
+                    });
                 }
             });
 

@@ -90,20 +90,11 @@
                                 <input type="hidden" id="responseType" value="EMS">
                             </div>
 
-                            <div id="emsDispositionSection" class="hidden animate-fade-in-down">
-                                <label for="emsDisposition" class="block text-sm font-medium text-blue-400 mb-1 uppercase tracking-wider">EMS Disposition</label>
-                                <select id="emsDisposition" class="w-full bg-gray-900 border border-blue-500 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500 outline-none transition uppercase">
-                                    <option value="">SELECT DISPOSITION</option>
-                                    <option value="TRANSPORT">TRANSPORT</option>
-                                    <option value="REFUSAL">REFUSAL</option>
-                                    <option value="NO PATIENT">NO PATIENT</option>
-                                    <option value="NO CREW/MA">NO CREW/MA</option>
-                                    <option value="OTHER EMS XPORT">OTHER EMS XPORT</option>
-                                    <option value="76 COVERAGE">76 COVERAGE</option>
-                                    <option value="2ND RUN">2ND RUN</option>
-                                    <option value="CANCELLED">CANCELLED</option>
-                                </select>
-                            </div>
+                            <fieldset id="emsDispositionSection" class="hidden animate-fade-in-down" aria-describedby="emsDispositionHint">
+                                <legend class="block text-sm font-medium text-blue-400 mb-1 uppercase tracking-wider">EMS Dispositions</legend>
+                                <p id="emsDispositionHint" class="text-xs text-gray-400 mb-2">Select all that apply. Choose at least one.</p>
+                                <div id="emsDisposition" class="grid grid-cols-2 gap-2"></div>
+                            </fieldset>
                         </div>
                     </div>
 
@@ -461,6 +452,7 @@
 
                 <div id="widget-voldispo" class="bg-gray-800 rounded-xl border border-gray-700 shadow-lg p-6">
                     <h3 class="font-bold text-lg text-white mb-4 uppercase border-b border-gray-700 pb-2">EMS Volunteer Dispositions</h3>
+                    <p class="text-xs text-gray-400 mb-3">Each selected disposition is counted. A call may appear in more than one category.</p>
                     <div id="stats-vol-dispo" class="space-y-3">
                         <div>
                             <div class="flex justify-between text-xs mb-1 uppercase font-semibold">
@@ -527,20 +519,11 @@
                             <input type="hidden" id="edit_responseType">
                         </div>
 
-                        <div id="edit_emsDispositionSection" class="hidden animate-fade-in-down">
-                            <label for="edit_emsDisposition" class="block text-sm font-medium text-blue-400 mb-1 uppercase tracking-wider">EMS Disposition</label>
-                            <select id="edit_emsDisposition" class="w-full bg-gray-900 border border-blue-500 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-blue-500 outline-none transition uppercase">
-                                <option value="">SELECT DISPOSITION</option>
-                                <option value="TRANSPORT">TRANSPORT</option>
-                                <option value="REFUSAL">REFUSAL</option>
-                                <option value="NO PATIENT">NO PATIENT</option>
-                                <option value="NO CREW/MA">NO CREW/MA</option>
-                                <option value="OTHER EMS XPORT">OTHER EMS XPORT</option>
-                                <option value="76 COVERAGE">76 COVERAGE</option>
-                                <option value="2ND RUN">2ND RUN</option>
-                                <option value="CANCELLED">CANCELLED</option>
-                            </select>
-                        </div>
+                        <fieldset id="edit_emsDispositionSection" class="hidden animate-fade-in-down" aria-describedby="edit_emsDispositionHint">
+                            <legend class="block text-sm font-medium text-blue-400 mb-1 uppercase tracking-wider">EMS Dispositions</legend>
+                            <p id="edit_emsDispositionHint" class="text-xs text-gray-400 mb-2">Select all that apply. Choose at least one.</p>
+                            <div id="edit_emsDisposition" class="grid grid-cols-2 gap-2"></div>
+                        </fieldset>
                     </div>
                 </div>
 
@@ -611,6 +594,6 @@
         <span id="toastMessage" class="uppercase font-bold text-sm">Action Successful</span>
     </div>
 
-    <script type="module" src="main.js?v=20260811-3"></script>
+    <script type="module" src="main.js?v=20260930-1"></script>
 </body>
 </html>
