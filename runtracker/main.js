@@ -1256,9 +1256,6 @@ function updateStats() {
             const day = dateObj.getDay(); 
             const hour = h;
 
-            // Saturday 08:00-18:00 is volunteer time regardless of the saved schedule.
-            if (day === 6 && hour >= 8 && hour < 18) return false;
-
             if (day >= 1 && day <= 5) {
                 return (hour >= wdStart && hour < wdEnd);
             } else {

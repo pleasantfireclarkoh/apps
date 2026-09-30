@@ -106,11 +106,25 @@
                         <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700 text-center">
                             <span class="block text-gray-400 text-sm uppercase font-bold mb-1">Day Crew</span>
                             <span id="stat-crew-day" class="text-5xl font-bold text-blue-400">0</span>
+                            <span id="stat-crew-day-pct" class="block text-sm text-gray-500 font-bold mt-1">0% COVERED</span>
                         </div>
                         <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700 text-center">
                             <span class="block text-gray-400 text-sm uppercase font-bold mb-1">Volunteer</span>
                             <span id="stat-crew-vol" class="text-5xl font-bold text-orange-400">0</span>
                             <span id="stat-crew-vol-pct" class="block text-sm text-gray-500 font-bold mt-1">0% COVERED</span>
+                        </div>
+                        <div class="col-span-2 bg-gray-900/50 p-4 rounded-lg border border-gray-700 text-center">
+                            <span class="block text-gray-400 text-sm uppercase font-bold mb-1">Combined</span>
+                            <span id="stat-crew-combined" class="text-5xl font-bold text-white">0</span>
+                            <span id="stat-crew-combined-pct" class="block text-sm text-gray-500 font-bold mt-1">0% COVERED</span>
+                        </div>
+                        <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700 text-center">
+                            <span class="block text-gray-400 text-sm uppercase font-bold mb-1">76 Coverage</span>
+                            <span id="stat-crew-76-coverage" class="text-5xl font-bold text-white">0</span>
+                        </div>
+                        <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700 text-center">
+                            <span class="block text-gray-400 text-sm uppercase font-bold mb-1">76 Sunday</span>
+                            <span id="stat-crew-76-sunday" class="text-5xl font-bold text-white">0</span>
                         </div>
                     </div>
                     <div class="bg-gray-900/30 p-3 rounded border border-gray-700 text-sm text-gray-400">
@@ -170,8 +184,16 @@
                         </div>
                     </div>
                     <h4 class="text-sm text-gray-400 uppercase font-bold mb-2 flex-none">Top Partners</h4>
-                    <ul id="stats-ma-depts" class="text-base space-y-2 text-gray-300 overflow-hidden flex-1">
-                        </ul>
+                    <div class="grid grid-cols-2 gap-4 overflow-hidden flex-1">
+                        <div class="min-w-0">
+                            <h5 class="text-sm text-yellow-400 uppercase font-bold mb-2">Given (To)</h5>
+                            <ul id="stats-ma-depts-given" class="text-base space-y-2 text-gray-300"></ul>
+                        </div>
+                        <div class="min-w-0">
+                            <h5 class="text-sm text-green-400 uppercase font-bold mb-2">Received (From)</h5>
+                            <ul id="stats-ma-depts-received" class="text-base space-y-2 text-gray-300"></ul>
+                        </div>
+                    </div>
                 </div>
              </div>
 
@@ -448,7 +470,8 @@
                 let givenDay = 0, givenVol = 0;
                 let receivedDay = 0, receivedVol = 0;
 
-                const maDepts = {};
+                const givenDepts = Object.create(null);
+                const receivedDepts = Object.create(null);
 
                 thisYearCalls.forEach(c => {
                     if (c.responseType === 'Fire') return;
@@ -463,9 +486,11 @@
                             receivedCount++;
                             if (isDay) receivedDay++; else receivedVol++;
                         }
-                        if (c.mutualAidDept) {
+                        const deptCounts = c.mutualAidType === 'Given' ? givenDepts
+                            : c.mutualAidType === 'Received' ? receivedDepts : null;
+                        if (c.mutualAidDept && deptCounts) {
                             const depts = c.mutualAidDept.split(',').map(s => s.trim());
-                            depts.forEach(d => { if(d) maDepts[d] = (maDepts[d] || 0) + 1; });
+                            depts.forEach(d => { if(d) deptCounts[d] = (deptCounts[d] || 0) + 1; });
                         }
                     }
                 });
@@ -478,20 +503,20 @@
                 document.getElementById('stat-ma-received-day').textContent = receivedDay;
                 document.getElementById('stat-ma-received-vol').textContent = receivedVol;
 
-                const sortedDepts = Object.entries(maDepts).sort((a, b) => b[1] - a[1]).slice(0, limit); 
-                const deptListEl = document.getElementById('stats-ma-depts');
-                deptListEl.innerHTML = '';
-                
-                if (sortedDepts.length === 0) {
-                    deptListEl.innerHTML = '<li class="text-gray-500 text-base italic">No data available</li>';
-                } else {
+                [['given', givenDepts], ['received', receivedDepts]].forEach(([direction, counts]) => {
+                    const sortedDepts = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, limit);
+                    const deptListEl = document.getElementById(`stats-ma-depts-${direction}`);
+                    deptListEl.innerHTML = '';
+                    if (sortedDepts.length === 0) {
+                        deptListEl.innerHTML = '<li class="text-gray-500 text-base italic">No data available</li>';
+                    }
                     sortedDepts.forEach(([name, count]) => {
                         const li = document.createElement('li');
-                        li.className = "flex justify-between border-b border-gray-700 py-2 last:border-0 items-center";
-                        li.innerHTML = `<span class="uppercase font-medium">${escapeHTML(name)}</span> <span class="bg-gray-700 text-white text-sm px-3 py-1 rounded-full font-bold">${count}</span>`;
+                        li.className = "flex justify-between gap-2 border-b border-gray-700 py-2 last:border-0 items-center";
+                        li.innerHTML = `<span class="min-w-0 break-words uppercase font-medium">${escapeHTML(name)}</span> <span class="shrink-0 bg-gray-700 text-white text-sm px-3 py-1 rounded-full font-bold">${count}</span>`;
                         deptListEl.appendChild(li);
                     });
-                }
+                });
             } else {
                 wMutual.classList.add('hidden');
             }
@@ -501,20 +526,24 @@
             const wVolDispo = document.getElementById('widget-voldispo');
 
             let dayCrewCount = 0;
+            let dayNoCrewCount = 0;
+            let coverage76Count = 0;
             let volunteerCount = 0;
             let volNoCrewCount = 0; // NEW: Track missed calls
-            const volDispCounts = {};
+            const volDispCounts = { '2ND RUN': 0 };
 
             document.getElementById('stats-sched-text-wd').textContent = `M-F: ${String(wdStart).padStart(2,'0')}:00 - ${String(wdEnd).padStart(2,'0')}:00`;
             document.getElementById('stats-sched-text-we').textContent = `S-S: ${String(weStart).padStart(2,'0')}:00 - ${String(weEnd).padStart(2,'0')}:00`;
 
             thisYearCalls.forEach(c => {
                 if (c.responseType === 'Fire') return;
+                if (c.emsDisposition === '76 COVERAGE') coverage76Count++;
                 
                 const isDayCrew = checkDayCrew(c);
 
                 if (isDayCrew) {
                     dayCrewCount++;
+                    if (c.emsDisposition === 'NO CREW/MA') dayNoCrewCount++;
                 } else {
                     volunteerCount++;
                     const disp = c.emsDisposition || 'NOT RECORDED';
@@ -527,12 +556,26 @@
                 wCrew.classList.remove('hidden');
                 document.getElementById('stat-crew-day').textContent = dayCrewCount;
                 document.getElementById('stat-crew-vol').textContent = volunteerCount;
+                document.getElementById('stat-crew-76-coverage').textContent = coverage76Count;
+                document.getElementById('stat-crew-76-sunday').textContent = thisYearCalls.filter(c => c.is76Sunday === true).length;
+
+                const dayPct = dayCrewCount > 0
+                    ? (((dayCrewCount - dayNoCrewCount) / dayCrewCount) * 100).toFixed(0)
+                    : 0;
+                document.getElementById('stat-crew-day-pct').textContent = `${dayPct}% COVERED`;
 
                 // NEW: Calculate Percentage
                 const volPct = volunteerCount > 0 
                     ? (((volunteerCount - volNoCrewCount) / volunteerCount) * 100).toFixed(0) 
                     : 0;
                 document.getElementById('stat-crew-vol-pct').textContent = `${volPct}% COVERED`;
+
+                const combinedCount = dayCrewCount + volunteerCount;
+                const combinedPct = combinedCount > 0
+                    ? (((combinedCount - dayNoCrewCount - volNoCrewCount) / combinedCount) * 100).toFixed(0)
+                    : 0;
+                document.getElementById('stat-crew-combined').textContent = combinedCount;
+                document.getElementById('stat-crew-combined-pct').textContent = `${combinedPct}% COVERED`;
 
             } else {
                 wCrew.classList.add('hidden');
@@ -549,7 +592,7 @@
                 } else {
                     const maxCount = sortedVolDisps[0][1];
                     sortedVolDisps.forEach(([name, count]) => {
-                        const barWidth = (count / maxCount) * 100;
+                        const barWidth = maxCount > 0 ? (count / maxCount) * 100 : 0;
                         const row = document.createElement('div');
                         row.innerHTML = `
                             <div class="flex justify-between text-base mb-1 uppercase font-semibold text-gray-300">
