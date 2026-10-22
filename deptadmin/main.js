@@ -1249,8 +1249,8 @@ function setupUnitStatusLogic() {
             await setDoc(doc(db, 'artifacts', globalAppId, 'public', 'data', 'unitStatus', unitId), {
                 unit: unitId,
                 status: fd.get('status'),
-                location: fd.get('location'),
-                comments: fd.get('comments'),
+                location: fd.get('location').toUpperCase(),
+                comments: fd.get('comments').toUpperCase(),
                 reported: serverTimestamp()
             });
             showMessage(document.getElementById('message-box-unit'), 'Unit updated.', 'success');

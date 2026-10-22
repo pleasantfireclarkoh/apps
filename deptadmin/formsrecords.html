@@ -19,10 +19,36 @@
         @media print {
             body * { visibility: hidden; }
             #detailModal, #detailModal * { visibility: visible; }
-            #detailModal { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; }
-            .modal-dialog { max-width: 100%; margin: 0; }
-            .modal-content { border: none; }
-            .modal-body { padding: 0; }
+            
+            /* UPDATED: Fix for cut-off content */
+            #detailModal { 
+                position: absolute; 
+                left: 0; 
+                top: 0; 
+                width: 100%; 
+                margin: 0; 
+                padding: 0;
+                overflow: visible !important; /* Allow expansion */
+            }
+            
+            /* Override scrollable dialog constraints */
+            .modal-dialog, 
+            .modal-dialog-scrollable .modal-content { 
+                max-width: 100%; 
+                margin: 0;
+                max-height: none !important; /* Remove height limit */
+                height: auto !important;
+                overflow: visible !important; /* Remove scrollbar hiding */
+            }
+            
+            .modal-body,
+            .modal-dialog-scrollable .modal-body { 
+                padding: 0; 
+                max-height: none !important; /* Remove body height limit */
+                height: auto !important;
+                overflow: visible !important; 
+            }
+
             .no-print { display: none !important; }
             .bg-light { background-color: #f8f9fa !important; -webkit-print-color-adjust: exact; }
             .report-header { border-bottom: 3px solid var(--primary-red) !important; }

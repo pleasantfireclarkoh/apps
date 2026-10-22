@@ -3,6 +3,12 @@ body {
     font-family: 'Inter', sans-serif; 
 }
 
+/* Unit Status */
+#view-units,
+#view-units * {
+    text-transform: uppercase;
+}
+
 /* Custom Scrollbar */
 .no-scrollbar::-webkit-scrollbar {
     display: none;
