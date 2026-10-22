@@ -3,299 +3,308 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
     <title>Catawba Weather Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            height: 100vh;
-            width: 100vw;
-            color: white;
-            transition: background 0.5s ease;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden; /* Prevent all scrolling */
-            user-select: none; /* Disable text selection for view-only feel */
+        :root { color-scheme: dark; --text: #f8fafc; --muted: #cbd5e1; --panel: #12243a; --tile: #1b314b; --border: #39516b; --accent: #ffda79; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; font-family: Inter, "Segoe UI", Arial, sans-serif; font-variant-numeric: tabular-nums; color: var(--text); background: linear-gradient(135deg, #102b4b, #174d69); transition: background .5s ease; }
+        /* Opaque panels keep text contrast constant when the weather backdrop changes. */
+        body.weather-clear { background: radial-gradient(ellipse at top right, #71602d 0%, transparent 55%), linear-gradient(135deg, #103858, #155575); }
+        body.weather-cloudy { background: linear-gradient(135deg, #293c50, #486376); }
+        body.weather-rain { background: linear-gradient(135deg, #172f4c, #31536d); }
+        body.weather-snow { background: linear-gradient(135deg, #2a4660, #627c91); }
+        body.weather-night { background: linear-gradient(135deg, #08121f, #1d354d); }
+        .dashboard { width: min(100%, 1664px); min-height: 100vh; min-height: 100svh; margin: auto; padding: clamp(16px, 2vw, 32px); display: flex; flex-direction: column; gap: 18px; }
+        .header, .brand, .status, .forecast-heading { display: flex; align-items: center; }
+        .header { justify-content: space-between; gap: 16px; }
+        .brand { gap: 12px; }
+        .brand .icon { width: 34px; height: 34px; color: var(--accent); }
+        h1, h2, h3, p { margin: 0; }
+        h1 { font-size: clamp(20px, 2vw, 30px); letter-spacing: -.03em; }
+        .status { justify-content: flex-end; gap: 9px; font-size: 14px; font-weight: 600; text-align: right; }
+        .status-dot { width: 9px; height: 9px; flex: 0 0 9px; border-radius: 50%; background: #cbd5e1; }
+        .status[data-state="current"] .status-dot { background: #86efac; }
+        .status[data-state="stale"] .status-dot, .status[data-state="error"] .status-dot { background: #ffda79; }
+        .weather-grid { flex: 1; display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 18px; }
+        .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 24px; box-shadow: 0 8px 24px #0002; }
+        .hero { padding: clamp(24px, 3vw, 42px); display: flex; flex-direction: column; justify-content: space-between; gap: 32px; }
+        .eyebrow { color: var(--accent); font-size: 13px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; margin-bottom: 10px; }
+        #city-name { font-size: clamp(32px, 4.5vw, 68px); line-height: 1.1; letter-spacing: -.04em; }
+        #current-date { margin-top: 10px; font-size: clamp(16px, 1.65vw, 24px); color: var(--muted); }
+        .conditions { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+        .temperature-group { display: flex; align-items: center; gap: clamp(16px, 2vw, 30px); min-width: 0; }
+        #current-icon-container { width: clamp(72px, 9vw, 144px); height: clamp(72px, 9vw, 144px); flex-shrink: 0; color: var(--accent); }
+        .icon { width: 1em; height: 1em; display: inline-block; vertical-align: middle; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+        #current-icon-container .icon { width: 100%; height: 100%; stroke-width: 1.5; }
+        .temperature { display: flex; align-items: flex-start; white-space: nowrap; }
+        #current-temp { font-size: clamp(72px, 9vw, 138px); font-weight: 700; line-height: 1; letter-spacing: -.07em; }
+        .unit { margin: 9px 0 0 7px; font-size: clamp(26px, 3vw, 46px); }
+        #current-desc { font-size: clamp(20px, 2vw, 30px); font-weight: 600; margin-top: 10px; }
+        .temperature-range { display: flex; flex-direction: column; gap: 10px; text-align: right; flex-shrink: 0; }
+        .temperature-range p { font-size: clamp(18px, 2vw, 28px); font-weight: 600; }
+        .temperature-range .feels { font-size: clamp(14px, 1.4vw, 20px); color: var(--muted); font-weight: 400; }
+        .details { display: grid; grid-template-columns: 1fr; gap: 14px; }
+        .detail { padding: clamp(16px, 1.6vw, 24px); display: flex; align-items: center; gap: 18px; }
+        .detail-icon { border-radius: 15px; background: var(--tile); padding: 12px; color: #b9dcff; flex-shrink: 0; }
+        .detail-icon .icon { width: 28px; height: 28px; }
+        .label { color: var(--muted); font-size: 13px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; line-height: 1.5; }
+        .detail-value { font-size: clamp(23px, 2.1vw, 32px); font-weight: 700; line-height: 1.3; }
+        .detail-value small { font-size: 16px; font-weight: 500; color: var(--muted); }
+        .forecast { grid-column: 1 / -1; padding: clamp(18px, 2vw, 28px); }
+        .forecast-heading { justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+        h3 { font-size: 21px; }
+        .forecast-heading p { color: var(--muted); font-size: 14px; }
+        #forecast-container { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; }
+        .forecast-day { background: var(--tile); border: 1px solid var(--border); border-radius: 16px; padding: 16px 8px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .day-name { font-size: 15px; font-weight: 700; }
+        .forecast-day > .icon { width: 36px; height: 36px; color: var(--accent); }
+        .day-description { color: var(--muted); font-size: 13px; min-height: 2.5em; display: flex; align-items: center; justify-content: center; }
+        .day-temps { display: flex; justify-content: center; gap: 12px; font-size: 20px; font-weight: 700; }
+        .day-low { color: var(--muted); font-weight: 500; }
+        .rain-chance { color: #b9dcff; font-size: 13px; }
+        .rain-chance .icon { width: 15px; height: 15px; margin-right: 4px; }
+        .forecast-placeholder { grid-column: 1 / -1; color: var(--muted); padding: 30px 0; text-align: center; }
+        .message { border: 1px solid #b99b50; border-radius: 14px; background: #362b15; color: #fff0c2; padding: 12px 18px; line-height: 1.5; }
+        [hidden] { display: none !important; }
+        footer { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; }
+        footer a { color: var(--text); text-underline-offset: 3px; }
+        a:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+        @media (min-width: 1100px) and (min-height: 700px) {
+            .dashboard { height: 100vh; height: 100svh; }
+            .weather-grid { min-height: 0; grid-template-rows: minmax(min-content, 1fr) auto; }
         }
-
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 1.5rem;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
+        @media (min-width: 1100px) and (max-height: 850px) {
+            .dashboard { padding: 20px; gap: 14px; }
+            .hero { padding: 28px; gap: 20px; }
+            #city-name { font-size: 52px; }
+            #current-date { font-size: 20px; }
+            #current-temp { font-size: 100px; }
+            #current-icon-container { width: 100px; height: 100px; }
+            #current-desc { font-size: 24px; }
+            .temperature-range p { font-size: 22px; }
+            .detail { padding: 10px 18px; }
+            .detail-value { font-size: 26px; }
+            .forecast { padding: 14px; }
+            .forecast-heading { margin-bottom: 12px; }
+            .forecast-day { padding: 10px 8px; gap: 6px; }
+            .forecast-day > .icon { width: 28px; height: 28px; }
         }
-
-        /* Dynamic Backgrounds based on weather */
-        body.weather-clear { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-        body.weather-cloudy { background: linear-gradient(135deg, #8e9eab 0%, #eef2f3 100%); color: #333; }
-        body.weather-cloudy .glass-panel { background: rgba(0, 0, 0, 0.05); border-color: rgba(0,0,0,0.1); color: #111;}
-        
-        body.weather-rain { background: linear-gradient(135deg, #3a7bd5 0%, #3a6073 100%); }
-        body.weather-snow { background: linear-gradient(135deg, #E0EAFC 0%, #CFDEF3 100%); color: #333; }
-        body.weather-snow .glass-panel { background: rgba(0, 0, 0, 0.05); border-color: rgba(0,0,0,0.1); color: #111;}
-
-        body.weather-night { background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); color: white; }
-        body.weather-night .glass-panel { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); color: white;}
+        @media (max-width: 1099px) {
+            .weather-grid { grid-template-columns: 1fr; }
+            .details { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            #forecast-container { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            .hero { min-height: 340px; }
+        }
+        @media (max-width: 599px) {
+            .dashboard { gap: 14px; }
+            .header { align-items: flex-start; flex-direction: column; gap: 10px; }
+            .status { font-size: 13px; text-align: left; }
+            .hero { padding: 22px; min-height: 340px; gap: 24px; }
+            .conditions { flex-direction: column; align-items: stretch; gap: 22px; }
+            .temperature-range { flex-direction: row; flex-wrap: wrap; gap: 10px 20px; text-align: left; border-top: 1px solid var(--border); padding-top: 16px; }
+            .temperature-range p { font-size: 20px; }
+            .temperature-range .feels { flex-basis: 100%; font-size: 16px; }
+            .details { gap: 10px; }
+            .detail { gap: 10px; padding: 16px 12px; align-items: flex-start; }
+            .detail-icon { padding: 7px; border-radius: 10px; }
+            .detail-icon .icon { width: 21px; height: 21px; }
+            .label { font-size: 11px; letter-spacing: .03em; }
+            .detail-value { font-size: 22px; }
+            .detail-value small { font-size: 13px; }
+            .forecast-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
+            #forecast-container { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+            footer { flex-direction: column; gap: 5px; }
+        }
+        @media (prefers-reduced-motion: reduce) { body { transition: none; } }
     </style>
 </head>
-<body class="antialiased p-4 md:p-6 lg:p-8 weather-clear" id="app-body">
-
-    <div class="w-full h-full flex flex-col space-y-4 max-w-[1600px] mx-auto">
-        
-        <header class="flex justify-between items-center px-2 flex-shrink-0">
-            <div class="flex items-center gap-3">
-                <i data-lucide="cloud-sun" class="w-8 h-8 md:w-10 md:h-10"></i>
-                <h1 class="text-xl md:text-3xl font-bold tracking-tight">Catawba Weather</h1>
-            </div>
-            <div id="status-indicator" class="text-xs md:text-sm font-medium opacity-70 flex items-center gap-2">
-                <span class="relative flex h-2 w-2">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-                </span>
-                Live Display
-            </div>
+<body id="app-body" class="weather-clear">
+    <div class="dashboard">
+        <header class="header">
+            <div class="brand"><span data-icon="cloud-sun" aria-hidden="true"></span><h1>Catawba Weather</h1></div>
+            <div id="status-indicator" class="status" data-state="loading" role="status" aria-live="polite"><span class="status-dot" aria-hidden="true"></span><span id="status-text">Loading weather…</span></div>
         </header>
-
-        <div id="error-message" class="hidden glass-panel bg-red-500/20 text-red-100 p-4 text-center">
-            Failed to load weather data.
-        </div>
-
-        <main id="weather-content" class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-grow overflow-hidden transition-opacity duration-300">
-            
-            <div class="glass-panel lg:col-span-8 p-6 md:p-8 flex flex-col justify-between relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-8 opacity-10 transform scale-[2.5] translate-x-1/4 -translate-y-1/4 pointer-events-none" id="hero-bg-icon">
+        <div id="error-message" class="message" role="status" hidden></div>
+        <main id="weather-content" class="weather-grid" aria-busy="true">
+            <section class="panel hero" aria-labelledby="city-name">
+                <div><p class="eyebrow">Current conditions</p><h2 id="city-name">Catawba, OH</h2><p id="current-date">Loading local weather…</p></div>
+                <div class="conditions">
+                    <div class="temperature-group"><div id="current-icon-container" data-icon="cloud-sun" aria-hidden="true"></div><div><div class="temperature"><span id="current-temp">--</span><span class="unit">°F</span></div><p id="current-desc">Loading…</p></div></div>
+                    <div class="temperature-range"><p>H: <span id="temp-high">--°</span></p><p>L: <span id="temp-low">--°</span></p><p class="feels">Feels like <span id="temp-feels">--°</span></p></div>
                 </div>
-                
-                <div class="relative z-10">
-                    <h2 id="city-name" class="text-3xl md:text-5xl lg:text-7xl font-bold mb-2">Catawba, OH</h2>
-                    <p id="current-date" class="text-lg md:text-2xl opacity-80 font-light">Loading...</p>
-                </div>
-
-                <div class="relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
-                    <div class="flex items-center gap-6 lg:gap-10">
-                        <div id="current-icon-container" class="w-24 h-24 md:w-32 md:h-32 lg:w-48 lg:h-48">
-                            </div>
-                        <div>
-                            <div class="flex items-start">
-                                <span id="current-temp" class="text-7xl md:text-8xl lg:text-9xl font-bold tracking-tighter leading-none">--</span>
-                                <span class="text-3xl md:text-4xl lg:text-5xl font-medium mt-2">°F</span>
-                            </div>
-                            <p id="current-desc" class="text-xl md:text-3xl font-medium capitalize mt-2">Loading...</p>
-                        </div>
-                    </div>
-                    
-                    <div class="flex flex-row md:flex-col gap-6 md:gap-2 text-left md:text-right w-full md:w-auto border-t md:border-t-0 border-white/10 pt-4 md:pt-0">
-                        <p class="text-xl md:text-3xl font-medium">H: <span id="temp-high">--°</span></p>
-                        <p class="text-xl md:text-3xl font-medium">L: <span id="temp-low">--°</span></p>
-                        <p class="text-sm md:text-lg opacity-80">Feels like <span id="temp-feels">--°</span></p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="lg:col-span-4 grid grid-cols-2 lg:grid-cols-1 gap-4">
-                <div class="glass-panel p-4 md:p-6 flex items-center gap-4">
-                    <div class="bg-white/10 p-3 rounded-2xl">
-                        <i data-lucide="wind" class="w-6 h-6 md:w-8 md:h-8"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs uppercase tracking-wider opacity-60">Wind</p>
-                        <p id="wind-display" class="text-xl md:text-2xl font-bold">--</p>
-                    </div>
-                </div>
-
-                <div class="glass-panel p-4 md:p-6 flex items-center gap-4">
-                    <div class="bg-white/10 p-3 rounded-2xl">
-                        <i data-lucide="droplets" class="w-6 h-6 md:w-8 md:h-8"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs uppercase tracking-wider opacity-60">Humidity</p>
-                        <p class="text-xl md:text-2xl font-bold"><span id="detail-humidity">--</span>%</p>
-                    </div>
-                </div>
-
-                <div class="glass-panel p-4 md:p-6 flex items-center gap-4">
-                    <div class="bg-white/10 p-3 rounded-2xl">
-                        <i data-lucide="sun" class="w-6 h-6 md:w-8 md:h-8"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs uppercase tracking-wider opacity-60">Max UV Index</p>
-                        <p class="text-xl md:text-2xl font-bold" id="detail-uv">--</p>
-                    </div>
-                </div>
-
-                <div class="glass-panel p-4 md:p-6 flex items-center gap-4">
-                    <div class="bg-white/10 p-3 rounded-2xl">
-                        <i data-lucide="cloud-rain" class="w-6 h-6 md:w-8 md:h-8"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs uppercase tracking-wider opacity-60">Precipitation</p>
-                        <p class="text-xl md:text-2xl font-bold"><span id="detail-precip">--</span> <span class="text-sm font-normal">in</span></p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="glass-panel lg:col-span-12 p-6 flex flex-col">
-                <h3 class="text-xl font-bold mb-4 flex items-center gap-3 flex-shrink-0">
-                    <i data-lucide="calendar-days" class="w-6 h-6 opacity-80"></i> 7-Day Forecast
-                </h3>
-                
-                <div class="grid grid-cols-4 lg:grid-cols-7 gap-3 flex-grow" id="forecast-container">
-                    </div>
-            </div>
-
+            </section>
+            <section class="details" aria-label="Weather details">
+                <div class="panel detail"><span class="detail-icon" data-icon="wind" aria-hidden="true"></span><div><p class="label">Wind</p><p class="detail-value"><span id="wind-speed">--</span> <small>mph <span id="wind-direction">--</span></small></p></div></div>
+                <div class="panel detail"><span class="detail-icon" data-icon="droplet" aria-hidden="true"></span><div><p class="label">Humidity</p><p class="detail-value"><span id="detail-humidity">--</span><small>%</small></p></div></div>
+                <div class="panel detail"><span class="detail-icon" data-icon="sun" aria-hidden="true"></span><div><p class="label">Max UV today</p><p class="detail-value" id="detail-uv">--</p></div></div>
+                <div class="panel detail"><span class="detail-icon" data-icon="rain" aria-hidden="true"></span><div><p class="label">Past-hour precip.</p><p class="detail-value"><span id="detail-precip">--</span> <small>in</small></p></div></div>
+            </section>
+            <section class="panel forecast" aria-labelledby="forecast-title">
+                <div class="forecast-heading"><h3 id="forecast-title">7-Day Forecast</h3><p>Starting tomorrow · High / Low</p></div>
+                <div id="forecast-container"><p class="forecast-placeholder">Loading the forecast…</p></div>
+            </section>
         </main>
+        <footer><span>Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a></span><span>Refreshes every 30 minutes · All times Eastern</span></footer>
     </div>
-
     <script>
-        // Initialize Lucide icons
-        lucide.createIcons();
-
-        // DOM Elements
-        const errorMsg = document.getElementById('error-message');
-        const weatherContent = document.getElementById('weather-content');
-        const appBody = document.getElementById('app-body');
-
-        const weatherCodes = {
-            0: { desc: 'Clear sky', icon: 'sun', theme: 'weather-clear' },
-            1: { desc: 'Mainly clear', icon: 'sun', theme: 'weather-clear' },
-            2: { desc: 'Partly cloudy', icon: 'cloud-sun', theme: 'weather-cloudy' },
-            3: { desc: 'Overcast', icon: 'cloud', theme: 'weather-cloudy' },
-            45: { desc: 'Fog', icon: 'cloud-fog', theme: 'weather-cloudy' },
-            48: { desc: 'Fog', icon: 'cloud-fog', theme: 'weather-cloudy' },
-            51: { desc: 'Light drizzle', icon: 'cloud-drizzle', theme: 'weather-rain' },
-            53: { desc: 'Moderate drizzle', icon: 'cloud-drizzle', theme: 'weather-rain' },
-            55: { desc: 'Dense drizzle', icon: 'cloud-drizzle', theme: 'weather-rain' },
-            61: { desc: 'Slight rain', icon: 'cloud-rain', theme: 'weather-rain' },
-            63: { desc: 'Moderate rain', icon: 'cloud-rain', theme: 'weather-rain' },
-            65: { desc: 'Heavy rain', icon: 'cloud-rain', theme: 'weather-rain' },
-            71: { desc: 'Slight snow', icon: 'snowflake', theme: 'weather-snow' },
-            73: { desc: 'Moderate snow', icon: 'snowflake', theme: 'weather-snow' },
-            75: { desc: 'Heavy snow', icon: 'snowflake', theme: 'weather-snow' },
-            80: { desc: 'Slight rain showers', icon: 'cloud-rain', theme: 'weather-rain' },
-            81: { desc: 'Moderate rain showers', icon: 'cloud-rain', theme: 'weather-rain' },
-            82: { desc: 'Violent rain showers', icon: 'cloud-lightning', theme: 'weather-rain' },
-            95: { desc: 'Thunderstorm', icon: 'cloud-lightning', theme: 'weather-rain' }
+        'use strict';
+        const TIME_ZONE = 'America/New_York';
+        const REFRESH_MS = 30 * 60 * 1000;
+        const RETRY_MS = 60 * 1000;
+        const $ = id => document.getElementById(id);
+        const sun = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4m0-14.2-1.4 1.4M6.3 17.7l-1.4 1.4"/>';
+        const cloud = '<path d="M7 18a5 5 0 1 1 1-9.9A6 6 0 0 1 19 10a4 4 0 0 1-1 8Z"/>';
+        // Inline icons and local CSS keep the display usable if a CDN is unavailable.
+        const icons = {
+            sun, cloud,
+            moon: '<path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z"/>',
+            'cloud-sun': '<circle cx="8" cy="7" r="3"/><path d="M8 1v1M2 7H1m2-5 1 1m9-1-1 1"/><path d="M8 20a4 4 0 1 1 0-8 5 5 0 0 1 9-1 4.5 4.5 0 1 1 2 9Z"/>',
+            'cloud-moon': '<path d="M10 2a5 5 0 1 0 5 7 5 5 0 0 1-5-7Z"/><path d="M7 21a4 4 0 1 1 1-8 5 5 0 0 1 9-1 4.5 4.5 0 1 1 2 9Z"/>',
+            rain: '<path d="M6 15a4 4 0 1 1 1-8 6 6 0 0 1 11 1 4 4 0 0 1 1 8M8 18l-1 3m6-3-1 3m6-3-1 3"/>',
+            snow: '<path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9 4l3 3 3-3M9 20l3-3 3 3M4 10l4-1-1-4M20 14l-4 1 1 4M4 14l4 1-1 4M20 10l-4-1 1-4"/>',
+            storm: '<path d="M6 16a4 4 0 1 1 1-8 6 6 0 0 1 11 1 4 4 0 0 1 1 8M13 12l-4 6h5l-3 5"/>',
+            fog: '<path d="M5 12a4 4 0 0 1 2-7 6 6 0 0 1 11 2 4 4 0 0 1 2 5M3 16h18M5 20h14"/>',
+            wind: '<path d="M3 8h12a3 3 0 1 0-3-3M2 12h17a3 3 0 1 1-3 3M4 16h5a3 3 0 1 1-3 3"/>',
+            droplet: '<path d="M12 2C9 7 5 10 5 15a7 7 0 0 0 14 0c0-5-4-8-7-13Z"/>',
+            unknown: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1 .7-1.5 1-1.5 3m0 3h.01"/>'
         };
+        const icon = name => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${icons[name] || icons.unknown}</svg>`;
+        document.querySelectorAll('[data-icon]').forEach(el => { el.innerHTML = icon(el.dataset.icon); });
 
-        const formatDate = (dateString, options) => {
-            const date = new Date(dateString + 'T00:00:00');
-            return new Intl.DateTimeFormat('en-US', options).format(date);
-        };
+        const weatherCodes = {};
+        const addCodes = (codes, descriptions, iconName, theme) => codes.forEach((code, i) => {
+            weatherCodes[code] = { desc: descriptions[i], icon: iconName, theme: `weather-${theme}` };
+        });
+        addCodes([0, 1], ['Clear sky', 'Mainly clear'], 'sun', 'clear');
+        addCodes([2], ['Partly cloudy'], 'cloud-sun', 'cloudy');
+        addCodes([3], ['Overcast'], 'cloud', 'cloudy');
+        addCodes([45, 48], ['Fog', 'Freezing fog'], 'fog', 'cloudy');
+        addCodes([51, 53, 55, 56, 57], ['Light drizzle', 'Moderate drizzle', 'Dense drizzle', 'Light freezing drizzle', 'Dense freezing drizzle'], 'rain', 'rain');
+        addCodes([61, 63, 65, 66, 67], ['Light rain', 'Moderate rain', 'Heavy rain', 'Light freezing rain', 'Heavy freezing rain'], 'rain', 'rain');
+        addCodes([71, 73, 75, 77, 85, 86], ['Light snow', 'Moderate snow', 'Heavy snow', 'Snow grains', 'Light snow showers', 'Heavy snow showers'], 'snow', 'snow');
+        addCodes([80, 81, 82], ['Light rain showers', 'Moderate rain showers', 'Heavy rain showers'], 'rain', 'rain');
+        addCodes([95, 96, 97, 99], ['Thunderstorm', 'Thunderstorm with hail', 'Heavy thunderstorm', 'Thunderstorm with heavy hail'], 'storm', 'rain');
+        const getWeatherInfo = code => weatherCodes[code] || { desc: 'Conditions unavailable', icon: 'unknown', theme: 'weather-cloudy' };
+        const number = (value, decimals = 0) => Number.isFinite(value) ? value.toFixed(decimals) : '--';
+        const getWindDirection = degree => Number.isFinite(degree) ? ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][((Math.round(degree / 45) % 8) + 8) % 8] : '--';
+        const formatTime = date => new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: TIME_ZONE, timeZoneName: 'short' }).format(date);
+        let refreshTimer;
+        let requestPending = false;
+        let lastWeatherTime = null;
+        let lastSuccessAt = 0;
+        let lastAttemptFailed = false;
 
-        // Helper to convert degree to compass direction
-        const getWindDirection = (degree) => {
-            const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-            const index = Math.round(degree / 45) % 8;
-            return directions[index];
-        };
-
-        async function getWeatherData(lat, lon) {
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m,wind_direction_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,uv_index_max&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=auto`;
-            const res = await fetch(url);
-            if (!res.ok) throw new Error("Failed to fetch weather data");
-            return await res.json();
+        function setStatus(state, text) {
+            $('status-indicator').dataset.state = state;
+            $('status-text').textContent = text;
         }
-
-        function updateUI(location, weather) {
-            const current = weather.current;
-            const daily = weather.daily;
-            
-            document.getElementById('city-name').textContent = `${location.name}, ${location.admin1}`;
-            
-            const now = new Date();
-            document.getElementById('current-date').textContent = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(now);
-
-            const codeInfo = weatherCodes[current.weather_code] || weatherCodes[0];
-            let iconName = codeInfo.icon;
-            
+        function updateFreshness() {
+            if (!lastWeatherTime) return;
+            const stale = lastAttemptFailed || Date.now() - lastSuccessAt > REFRESH_MS + RETRY_MS || Date.now() - lastWeatherTime.getTime() > 90 * 60 * 1000;
+            setStatus(stale ? 'stale' : 'current', `${stale ? 'Outdated' : 'Updated'} · ${formatTime(lastWeatherTime)}`);
+        }
+        async function getWeatherData() {
+            const params = new URLSearchParams({
+                latitude: '39.9992', longitude: '-83.6216',
+                current: 'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m,wind_direction_10m',
+                daily: 'weather_code,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_probability_max',
+                temperature_unit: 'fahrenheit', wind_speed_unit: 'mph', precipitation_unit: 'inch',
+                timezone: TIME_ZONE, timeformat: 'unixtime', forecast_days: '8'
+            });
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 15000);
+            try {
+                const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`, { signal: controller.signal, cache: 'no-store' });
+                if (!response.ok) throw new Error(`Weather request failed (${response.status})`);
+                const weather = await response.json();
+                // Validate before replacing the last good display; optional missing values show "--".
+                if (!Number.isFinite(weather.current?.time) || !Number.isFinite(weather.current?.temperature_2m) || !Array.isArray(weather.daily?.time) || weather.daily.time.length < 8 || !weather.daily.time.every(Number.isFinite) || !Array.isArray(weather.daily?.weather_code) || !Array.isArray(weather.daily?.temperature_2m_max) || !Array.isArray(weather.daily?.temperature_2m_min)) {
+                    throw new Error('Incomplete weather response');
+                }
+                return weather;
+            } finally { clearTimeout(timeout); }
+        }
+        function updateUI(weather) {
+            const { current, daily } = weather;
+            const info = getWeatherInfo(current.weather_code);
+            let iconName = info.icon;
             if (current.is_day === 0) {
                 if (iconName === 'sun') iconName = 'moon';
                 if (iconName === 'cloud-sun') iconName = 'cloud-moon';
-                appBody.className = `antialiased p-4 md:p-6 lg:p-8 weather-night`;
-            } else {
-                appBody.className = `antialiased p-4 md:p-6 lg:p-8 ${codeInfo.theme}`;
             }
-
-            document.getElementById('current-temp').textContent = Math.round(current.temperature_2m);
-            document.getElementById('current-desc').textContent = codeInfo.desc;
-            document.getElementById('temp-feels').textContent = `${Math.round(current.apparent_temperature)}°`;
-            
-            const iconHtml = `<i data-lucide="${iconName}" class="w-full h-full text-current drop-shadow-xl"></i>`;
-            document.getElementById('current-icon-container').innerHTML = iconHtml;
-            document.getElementById('hero-bg-icon').innerHTML = `<i data-lucide="${iconName}" class="w-full h-full"></i>`;
-            
-            document.getElementById('temp-high').textContent = `${Math.round(daily.temperature_2m_max[0])}°`;
-            document.getElementById('temp-low').textContent = `${Math.round(daily.temperature_2m_min[0])}°`;
-            
-            // Update Wind with Direction
-            const windSpeed = Math.round(current.wind_speed_10m);
-            const windDir = getWindDirection(current.wind_direction_10m);
-            document.getElementById('wind-display').innerHTML = `${windSpeed} <span class="text-sm font-normal">mph</span> <span class="ml-1 text-base opacity-70">${windDir}</span>`;
-            
-            document.getElementById('detail-humidity').textContent = current.relative_humidity_2m;
-            document.getElementById('detail-uv').textContent = Math.round(daily.uv_index_max[0]);
-            document.getElementById('detail-precip').textContent = current.precipitation.toFixed(2);
-
-            const forecastContainer = document.getElementById('forecast-container');
-            forecastContainer.innerHTML = '';
-
-            for (let i = 1; i < 8; i++) {
-                if(i >= daily.time.length) continue; 
-                
-                const dayDate = daily.time[i];
-                const dayCode = daily.weather_code[i];
-                const dayMax = Math.round(daily.temperature_2m_max[i]);
-                const dayMin = Math.round(daily.temperature_2m_min[i]);
-                const dayInfo = weatherCodes[dayCode] || weatherCodes[0];
-                const dayName = formatDate(dayDate, { weekday: 'short' });
-
-                const dayCard = document.createElement('div');
-                dayCard.className = 'glass-panel flex flex-col items-center justify-center p-3 text-center pointer-events-none';
-                
-                dayCard.innerHTML = `
-                    <span class="text-xs font-semibold uppercase tracking-wider opacity-70 mb-2">${dayName}</span>
-                    <i data-lucide="${dayInfo.icon}" class="w-8 h-8 md:w-10 md:h-10 mb-2"></i>
-                    <div class="flex flex-col gap-0">
-                        <span class="text-lg font-bold">${dayMax}°</span>
-                        <span class="text-xs opacity-60">${dayMin}°</span>
-                    </div>
-                `;
-                forecastContainer.appendChild(dayCard);
+            $('app-body').className = current.is_day === 0 ? 'weather-night' : info.theme;
+            $('current-date').textContent = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: TIME_ZONE }).format(new Date(current.time * 1000));
+            $('current-temp').textContent = number(current.temperature_2m);
+            $('current-desc').textContent = info.desc;
+            $('current-icon-container').innerHTML = icon(iconName);
+            $('temp-feels').textContent = `${number(current.apparent_temperature)}°`;
+            $('temp-high').textContent = `${number(daily.temperature_2m_max[0])}°`;
+            $('temp-low').textContent = `${number(daily.temperature_2m_min[0])}°`;
+            $('wind-speed').textContent = number(current.wind_speed_10m);
+            $('wind-direction').textContent = getWindDirection(current.wind_direction_10m);
+            $('detail-humidity').textContent = number(current.relative_humidity_2m);
+            $('detail-uv').textContent = number(daily.uv_index_max?.[0]);
+            $('detail-precip').textContent = number(current.precipitation, 2);
+            const fragment = document.createDocumentFragment();
+            for (let i = 1; i <= 7; i++) {
+                const dayInfo = getWeatherInfo(daily.weather_code[i]);
+                // Daily Unix timestamps represent midnight in the forecast location.
+                const day = new Date(daily.time[i] * 1000);
+                const name = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: TIME_ZONE }).format(day);
+                const date = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: TIME_ZONE }).format(day);
+                const card = document.createElement('article');
+                card.className = 'forecast-day';
+                card.innerHTML = `<p class="day-name">${name}<span class="sr-only">, ${date}</span></p>
+                    ${icon(dayInfo.icon)}<p class="day-description">${dayInfo.desc}</p>
+                    <p class="day-temps"><span><span class="sr-only">High </span>${number(daily.temperature_2m_max[i])}°</span><span class="day-low"><span class="sr-only">Low </span>${number(daily.temperature_2m_min[i])}°</span></p>
+                    <p class="rain-chance">${icon('droplet')}${number(daily.precipitation_probability_max?.[i])}%<span class="sr-only"> chance of precipitation</span></p>`;
+                fragment.appendChild(card);
             }
-
-            lucide.createIcons();
-            weatherContent.classList.remove('opacity-0', 'invisible');
-            errorMsg.classList.add('hidden');
+            $('forecast-container').replaceChildren(fragment);
+            $('weather-content').setAttribute('aria-busy', 'false');
         }
-
         async function loadCatawbaWeather() {
+            if (requestPending) return;
+            requestPending = true;
+            clearTimeout(refreshTimer);
+            setStatus('loading', lastWeatherTime ? `Refreshing · ${formatTime(lastWeatherTime)}` : 'Loading weather…');
             try {
-                const location = {
-                    lat: 39.9992,
-                    lon: -83.6216,
-                    name: "Catawba",
-                    admin1: "OH",
-                    country: "US"
-                };
-                const weather = await getWeatherData(location.lat, location.lon);
-                updateUI(location, weather);
+                const weather = await getWeatherData();
+                updateUI(weather);
+                lastWeatherTime = new Date(weather.current.time * 1000);
+                lastSuccessAt = Date.now();
+                lastAttemptFailed = false;
+                $('error-message').hidden = true;
+                updateFreshness();
             } catch (error) {
-                console.error(error);
-                errorMsg.classList.remove('hidden');
+                console.error('Weather refresh failed:', error);
+                lastAttemptFailed = true;
+                $('error-message').textContent = lastWeatherTime
+                    ? `Unable to refresh weather. Showing data from ${formatTime(lastWeatherTime)}. Retrying in one minute.`
+                    : 'Unable to load weather. Check the connection. Retrying in one minute.';
+                $('error-message').hidden = false;
+                $('weather-content').setAttribute('aria-busy', 'false');
+                if (lastWeatherTime) updateFreshness();
+                else {
+                    setStatus('error', 'Weather unavailable');
+                    $('current-date').textContent = 'Waiting for weather data';
+                    $('current-desc').textContent = 'Conditions unavailable';
+                    $('current-icon-container').innerHTML = icon('unknown');
+                    $('forecast-container').innerHTML = '<p class="forecast-placeholder">Forecast unavailable until the connection returns.</p>';
+                }
+            } finally {
+                requestPending = false;
+                refreshTimer = setTimeout(loadCatawbaWeather, lastAttemptFailed ? RETRY_MS : REFRESH_MS);
             }
         }
-
-        document.addEventListener('DOMContentLoaded', loadCatawbaWeather);
-        
-        // Refresh weather data every 30 minutes for a live display
-        setInterval(loadCatawbaWeather, 1800000);
+        window.addEventListener('online', loadCatawbaWeather);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && (lastAttemptFailed || Date.now() - lastSuccessAt >= REFRESH_MS)) loadCatawbaWeather();
+        });
+        setInterval(updateFreshness, RETRY_MS);
+        loadCatawbaWeather();
     </script>
 </body>
 </html>
