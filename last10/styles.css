@@ -45,7 +45,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   background: #ffffff02;
 }
 .run-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .15em; color: var(--muted); }
-.run-number { max-width: 100%; font-size: clamp(14px, 1.2vw, 23px); font-weight: 650; letter-spacing: -.025em; color: #c4d1df; overflow-wrap: anywhere; }
+.run-number { max-width: 100%; font-size: clamp(42px, 4vw, 76px); line-height: 1; font-weight: 750; letter-spacing: -.025em; color: var(--text); white-space: nowrap; }
 .incident-card:first-child .run-identity { background: #ffb16807; }
 .incident-card:first-child .run-number { color: var(--accent); }
 .incident-card article { padding: clamp(15px, 1.4vw, 25px); flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
@@ -85,7 +85,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 }
 @media (max-width: 1100px) {
   .run-identity { width: 112px; }
-  .run-number { font-size: 14px; }
+  .run-number { font-size: 42px; }
   .incident-card article { padding: 13px; }
   .latest-tag { display: none; }
 }
@@ -94,7 +94,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
   .incident-grid { grid-template-columns: 1fr; grid-template-rows: none; grid-auto-flow: row; flex: 0; gap: 10px; }
   .run-identity { width: 105px; padding: 14px 8px; }
   .run-label { font-size: 9px; }
-  .run-number { font-size: 14px; }
+  .run-number { font-size: 42px; }
   .incident-card article { padding: 18px 15px; }
   .nature { font-size: 24px; }
   .address { font-size: 19px; }
@@ -106,7 +106,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 @media (max-width: 390px) {
   .board { padding: 10px; }
   .run-identity { width: 91px; padding: 12px 6px; }
-  .run-number { font-size: 12px; }
+  .run-number { font-size: 38px; }
   .incident-card article { padding: 15px 12px; }
   .nature { font-size: 21px; }
   .address { font-size: 17px; gap: 5px; }

@@ -31,7 +31,10 @@ function render(data) {
     if (!card) { card = ui['incident-template'].content.firstElementChild.cloneNode(true); cards.set(key,card); }
     const item = presentation(run), dispatch = dispatchParts(run);
     card.dataset.type = item.type;
-    card.querySelector('.run-number').textContent = item.number;
+    const runNumber = card.querySelector('.run-number');
+    runNumber.textContent = item.number.match(/\d{3}$/)?.[0] || '—';
+    runNumber.title = item.number;
+    runNumber.setAttribute('aria-label', `Run ${item.number}`);
     card.querySelector('.nature').textContent = item.nature;
     card.querySelector('.latest-tag').hidden = index !== 0;
     card.querySelector('.address span').textContent = item.address;

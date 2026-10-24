@@ -6,7 +6,7 @@ The board uses the existing `pleasant-fire` Firebase project and `artifacts/plea
 
 Records follow Run Tracker's descending year/sequence order. Legacy records can fall back to the incident ID or dispatch date. EMS nature codes remain masked as `EMS CALL`; explicitly EMS responses are also masked. Combined responses retain their response label.
 
-The interface shows only incident cards, with the actual run number in each card's left rail. There is no header, summary, or footer. Desktop order is newest to oldest down the left column, then the right column; phones show a single ordered column. Long text wraps rather than being truncated. Incident dates and times use the stored dispatch values. Connection warnings and retry controls appear below the cards only when needed; loading and empty states appear when there are no cards.
+The interface shows only incident cards, with the last three digits of the run number enlarged in each card's left rail. Hovering the number reveals the full run number, which is also available to screen readers. There is no header, summary, or footer. Desktop order is newest to oldest down the left column, then the right column; phones show a single ordered column. Long text wraps rather than being truncated. Incident dates and times use the stored dispatch values. Connection warnings and retry controls appear below the cards only when needed; loading and empty states appear when there are no cards.
 
 The full collection listener preserves legacy records that lack sort fields. Moving to a limited server query requires backfilling those fields and setting up an appropriate Firestore index first.
 
