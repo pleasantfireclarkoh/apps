@@ -7,4 +7,32 @@
 @media(min-width:801px) and (max-height:900px){.unit-grid{gap:11px;padding-bottom:14px}.card-status{font-size:10px;padding:7px 16px}.card-body{padding:8px 17px 0}.unit-identity{min-height:53px}.vehicle-drawing{max-height:49px}.unit-location{margin-top:9px;padding-top:9px;font-size:12px}.unit-remarks{padding:8px 0 10px;min-height:0}.unit-remarks p{line-height:1.45;font-size:10px}.card-footer{padding:7px 17px;font-size:9px}}
 @media(min-width:1500px) and (min-height:901px){}.unit-location>span{display:block;flex:1;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.4;height:1.4em;text-overflow:clip}.unit-remarks p{display:block;flex:1;min-width:0;white-space:pre-wrap;line-height:1.5;height:3em;-webkit-line-clamp:unset}.rotation-indicator{color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
 @media(min-width:801px) and (max-height:900px){.unit-remarks p{font-size:12px}}.unit-identity{min-height:90px;gap:12px}.unit-name{font-family:var(--display);font-size:clamp(38px,3.8vw,72px);font-weight:600;letter-spacing:.01em;line-height:1;margin:0;white-space:nowrap}.unit-station{font-size:.5em;font-weight:500;letter-spacing:0;color:#95a3ad}.vehicle-drawing{width:25%;max-width:140px;min-width:0;margin-top:0;flex-shrink:1}.board{max-width:none;padding:clamp(14px,2vw,28px)}.unit-grid{padding-bottom:0}
+/* Across-room reading on the 32-inch, 1080p kiosk TV. */
+@media(min-width:1500px) and (min-height:900px){
+  .board{padding:24px}
+  .unit-grid{gap:20px}
+  .unit-card{border-color:#40505d;border-radius:10px}
+  .unit-card.service{--tint:#65e2aa18}
+  .unit-card.limited{--tint:#ffc36c18}
+  .unit-card.oos{--tint:#ff7b7f18}
+  .card-status{gap:12px;padding:14px 24px;border-top-width:5px;font-size:30px;line-height:1.2;font-weight:700;letter-spacing:.03em}
+  .card-status>svg{width:30px;height:30px;stroke-width:2.5}
+  .card-index{display:none}
+  .card-body{padding:20px 24px 0}
+  .unit-identity{min-height:102px}
+  .unit-name{font-size:88px;font-weight:700;letter-spacing:0}
+  .unit-station{font-size:.42em;color:#bac7d0}
+  .vehicle-drawing{display:none}
+  .unit-location{gap:12px;margin-top:14px;padding-top:14px;font-size:30px;font-weight:600;color:#f6f8fa}
+  .unit-location>span{line-height:1.3;height:1.3em}
+  .unit-location svg{width:28px;height:28px;color:#b7c7d2}
+  .unit-remarks{flex-direction:column;align-items:stretch;gap:8px;padding:18px 0;min-height:0}
+  .unit-remarks .label{font-size:16px;line-height:1.2;font-weight:600;letter-spacing:.08em;color:#b7c7d2}
+  .unit-remarks p{flex:0 0 auto;font-size:28px;line-height:1.35;height:4.05em;font-weight:500;color:#f1f5f7}
+  .unit-remarks p.empty{color:#bdc9d2}
+  .card-footer{gap:12px;padding:12px 24px;font-size:20px;line-height:1.25;color:#b7c7d2}
+  .report-time{gap:8px}
+  .report-time svg{width:20px;height:20px}
+  .rotation-indicator{font-size:18px;color:#b7c7d2}
+}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
