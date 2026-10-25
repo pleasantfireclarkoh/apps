@@ -115,6 +115,26 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
   .incident-type { font-size: 8px; }
   .dispatch time { gap: 4px 8px; }
 }
+/* Station TV: use the available card space for text readable across the room. */
+@media (min-width: 1500px) and (min-height: 900px) {
+  .board { padding: 18px; }
+  .incident-grid { gap: 12px 16px; }
+  .incident-card article { padding: 10px 22px; }
+  .run-label { font-size: 16px; color: #c4d1df; }
+  .nature { font-size: 46px; line-height: 1.08; }
+  .latest-tag { font-size: 14px; padding: 5px 7px; }
+  .address { margin-top: 7px; font-size: 36px; line-height: 1.12; font-weight: 600; color: var(--text); }
+  .address svg { width: 22px; height: 27px; margin-top: 4px; color: #b6c6d8; }
+  .card-footer { padding-top: 8px; font-size: 24px; line-height: 1.1; color: #d0dae6; }
+  .incident-type { font-size: 18px; letter-spacing: .045em; }
+  .dispatch { gap: 8px; }
+  .dispatch svg { width: 21px; height: 21px; }
+  .dispatch time { gap: 6px 16px; }
+  .dispatch .time { color: var(--text); }
+  .notice, .notice button { font-size: 20px; }
+  .empty-state h2 { font-size: 32px; }
+  .empty-state p { font-size: 24px; }
+}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }

@@ -10,4 +10,6 @@ The interface shows only incident cards, with the last three digits of the run n
 
 The full collection listener preserves legacy records that lack sort fields. Moving to a limited server query requires backfilling those fields and setting up an appropriate Firestore index first.
 
+At TV-sized viewports (at least 1500×900), the board enlarges call types to 46px, addresses to 36px, dates/times to 24px, and response labels to 18px. The three-digit run numbers retain their existing size. The 1920×1080 layout shows all ten incidents without scrolling.
+
 Run the focused data checks with `node --test last10/model.test.mjs` from the APPS folder. Visual checks should cover 1280×720, 1920×1080, and phone widths.
